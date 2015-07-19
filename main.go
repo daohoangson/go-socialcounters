@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"appengine"
+	"appengine/memcache"
 	"appengine/urlfetch"
 	"github.com/daohoangson/minify/css"
 	"socialcounters/services"
@@ -26,11 +28,35 @@ func alljs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var js string
+	ttl := 300
+	if item, err := memcache.Get(c, url); err != nil {
+		js, err = alljsGenerate(c, url)
+		if (err != nil) {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		item := &memcache.Item{
+			Key: url,
+			Value: []byte(js),
+			Expiration: time.Duration(ttl) * time.Second,
+		}
+		memcache.Add(c, item);
+	} else {
+		js = string(item.Value)
+	}
+
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
+	fmt.Fprintf(w, js)
+}
+
+func alljsGenerate(c appengine.Context, url string) (string, error) {
 	jsData, err := ioutil.ReadFile("private/js/all.js")
 	if (err != nil) {
-		w.WriteHeader(http.StatusNotFound)
 		c.Debugf("Could not read all.js")
-		return
+		return "", err
 	}
 	js := strings.Replace(string(jsData), "{url}", url, 1)
 
@@ -51,14 +77,11 @@ func alljs(w http.ResponseWriter, r *http.Request) {
 	countsJson, err := json.Marshal(counts)
 	if (err != nil) {
 		c.Debugf("Could not marshal count map")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return "", err
 	}
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
 
-	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", "public; max-age=300")
-	fmt.Fprintf(w, js)
+	return js, nil
 }
 
 func init() {
