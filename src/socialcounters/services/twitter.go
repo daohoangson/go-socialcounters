@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+import neturl "net/url"
+
 type twitterResponse struct {
 	Count float64
 	Url string
@@ -15,7 +17,7 @@ func Twitter(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Twitter"
 
-	resp, err := client.Get("https://cdn.api.twitter.com/1/urls/count.json?url=" + url)
+	resp, err := client.Get("https://cdn.api.twitter.com/1/urls/count.json?url=" + neturl.QueryEscape(url))
 	if err != nil {
 		result.Error = err
 		return result
