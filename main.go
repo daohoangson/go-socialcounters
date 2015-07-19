@@ -72,6 +72,9 @@ func alljsGenerate(c appengine.Context, url string) (string, error) {
 		if serviceResult.Error != nil {
 			c.Debugf("%s error: %v", serviceResult.Service, serviceResult.Error)
 		}
+		if len(serviceResult.Response) > 0 {
+			c.Debugf("%s response: %s", serviceResult.Service, serviceResult.Response)
+		}
 	}
 
 	countsJson, err := json.Marshal(counts)

@@ -12,7 +12,10 @@ func Facebook(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Facebook"
 
-	resp, err := client.Get("https://graph.facebook.com?ids=" + neturl.QueryEscape(url))
+	// we have to go through crossorigin.me because for some reason Facebook returns bogus data
+	// especially when request are made within GAE. I have tested with user agent and some other
+	// GAE special request headers but haven't found the real culprit, yet...
+	resp, err := client.Get("http://crossorigin.me/http://graph.facebook.com?ids=" + neturl.QueryEscape(url))
 	if err != nil {
 		result.Error = err
 		return result
