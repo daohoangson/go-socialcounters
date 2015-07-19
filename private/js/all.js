@@ -51,7 +51,12 @@ if (typeof jQuery === 'function') {
 			$service.appendTo($div);
 		}
 
-		$div.appendTo($('body'));
+		var $container = $('.socialcounters-container');
+		if ($container.length > 0) {
+			$div.appendTo($container)
+		} else {
+			$div.appendTo($('body'));
+		}
 
 		$('<style />')
 			.text(css)
