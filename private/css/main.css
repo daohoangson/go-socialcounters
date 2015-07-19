@@ -1,0 +1,58 @@
+.socialcounters {
+	font-size: 12px;
+}
+
+.sc-service {
+	border: 1px solid transparent;
+	display: inline-block;
+	margin-left: 5px;
+}
+
+.sc-service:first-child {
+	margin-left: 0;
+}
+
+.sc-service.sc-facebook {
+	border-color: #3b579d;
+	color: #3b579d;
+}
+
+.sc-service.sc-twitter {
+	border-color: #55acee;
+	color: #55acee;
+}
+
+.sc-service.sc-google {
+	border-color: #dc4b39;
+	color: #dc4b39;
+}
+
+.sc-service .sc-data-url {
+	background-repeat: no-repeat;
+	background-size: cover;
+	color: transparent;
+	display: inline-block;
+	height: 20px;
+	line-height: 20px;
+	width: 20px;
+}
+
+.sc-service.sc-facebook .sc-data-url {
+	background-image: url("../img/facebook.png");
+}
+
+.sc-service.sc-twitter .sc-data-url {
+	background-image: url("../img/twitter.png");
+}
+
+.sc-service.sc-google .sc-data-url {
+	background-image: url("../img/google.png");
+}
+
+.sc-service .sc-count {
+	display: inline-block;
+	line-height: 20px;
+	margin: 0 5px;
+	min-width: 20px;
+	text-align: center;
+}
