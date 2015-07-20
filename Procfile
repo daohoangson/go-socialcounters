@@ -1,1 +1,1 @@
-web: run
+web: go-socialcounters
