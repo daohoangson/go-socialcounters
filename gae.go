@@ -1,9 +1,8 @@
-// +build ignore
+// +build appengine
 
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -23,9 +22,10 @@ var serviceFuncs = []services.ServiceFunc{
 func allJs(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	ttl := web.JsTtl(r)
+	memcacheKey := r.RequestURI
 	var js string
 
-	if item, err := memcache.Get(c, url); err != nil {
+	if item, err := memcache.Get(c, memcacheKey); err != nil {
 		client := urlfetch.Client(c)
 		js, err = web.AllJs(r, client, serviceFuncs)
 		if (err != nil) {
@@ -35,7 +35,7 @@ func allJs(w http.ResponseWriter, r *http.Request) {
 		}
 
 		item := &memcache.Item{
-			Key: url,
+			Key: memcacheKey,
 			Value: []byte(js),
 			Expiration: time.Duration(ttl) * time.Second,
 		}
