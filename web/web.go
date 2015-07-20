@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/daohoangson/go-minify/css"
 	"github.com/daohoangson/go-socialcounters/services"
@@ -28,6 +29,7 @@ func AllJs(r *http.Request, client *http.Client, serviceFuncs []services.Service
 		return "", err
 	}
 	js := strings.Replace(string(jsData), "{url}", url, 1)
+	js = strings.Replace(js, "{now}", fmt.Sprintf("%v", time.Now()), 1)
 
 	css := css.MinifyFromFile("private/css/main.css")
 	js = strings.Replace(js, "{css}", css, 1)

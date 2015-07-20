@@ -1,6 +1,7 @@
 if (typeof jQuery === 'function') {
 	(function($){
 		var url = '{url}';
+		var now = '{now}';
 		var css = '{css}';
 		var counts = {counts};
 		var services = ['Facebook', 'Twitter', 'Google'];
