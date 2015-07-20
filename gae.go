@@ -22,7 +22,7 @@ var serviceFuncs = []services.ServiceFunc{
 
 func allJs(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	ttl := web.JsTtl()
+	ttl := web.JsTtl(r)
 	var js string
 
 	if item, err := memcache.Get(c, url); err != nil {
@@ -44,7 +44,7 @@ func allJs(w http.ResponseWriter, r *http.Request) {
 		js = string(item.Value)
 	}
 
-	web.JsWrite(w, js)
+	web.JsWrite(w, r, js)
 }
 
 func init() {

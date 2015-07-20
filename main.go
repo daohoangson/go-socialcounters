@@ -25,7 +25,7 @@ func allJs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	web.JsWrite(w, js)
+	web.JsWrite(w, r, js)
 }
 
 func main() {

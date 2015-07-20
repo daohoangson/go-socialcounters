@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/daohoangson/go-minify/css"
@@ -54,13 +55,21 @@ func AllJs(r *http.Request, client *http.Client, serviceFuncs []services.Service
 	return js, nil
 }
 
-func JsTtl() uint64 {
+func JsTtl(r *http.Request) uint64 {
+	q := r.URL.Query()
+	if ttls, ok := q["ttl"]; ok {
+		ttl, err := strconv.ParseUint(ttls[0], 10, 64)
+		if err == nil {
+			return ttl
+		}
+	}
+
 	return 300
 }
 
-func JsWrite(w http.ResponseWriter, js string) {
+func JsWrite(w http.ResponseWriter, r *http.Request, js string) {
 	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", JsTtl()))
+	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", JsTtl(r)))
 	fmt.Fprintf(w, js)
 }
 
