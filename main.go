@@ -4,39 +4,38 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
-	"socialcounters/web"
+	"github.com/daohoangson/go-socialcounters/services"
+	"github.com/daohoangson/go-socialcounters/web"
 )
 
-func mainAllJs(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	var url string
-	if urls, ok := q["url"]; ok {
-		url = urls[0]
-	}
-	if len(url) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("No `url` specified for all.js")
-		return
-	}
+var serviceFuncs = []services.ServiceFunc{
+	services.Facebook2,
+	services.Twitter,
+	services.Google,
+}
 
-	ttl := 300	
+func allJs(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
-	js, err := web.AllJs(client, url)
+	js, err := web.AllJs(r, client, serviceFuncs)
 	if (err != nil) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Could not prepare all.js %v", err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
-	fmt.Fprintf(w, js)
+	web.JsWrite(w, js)
 }
 
 func main() {
 	web.InitFileServer()
-	http.HandleFunc("/js/all.js", mainAllJs)
+	http.HandleFunc("/js/all.js", allJs)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
+	fmt.Printf("Listening on %s...\n", port)
+	log.Fatal(http.ListenAndServe(":" + port, nil))
 }

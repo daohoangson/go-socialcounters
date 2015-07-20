@@ -1,0 +1,10 @@
+{
+	"ImportPath": "github.com/daohoangson/go-socialcounters",
+	"GoVersion": "go1.1.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/daohoangson/go-minify/css",
+			"Rev": "21824099efdd57011361c6d7047160846b3fec78"
+		}
+	]
+}

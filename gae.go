@@ -1,3 +1,5 @@
+// +build ignore
+
 package main
 
 import (
@@ -8,27 +10,24 @@ import (
 	"appengine"
 	"appengine/memcache"
 	"appengine/urlfetch"
-	"socialcounters/web"
+	"github.com/daohoangson/go-socialcounters/services"
+	"github.com/daohoangson/go-socialcounters/web"
 )
 
-func gaeAllJs(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	q := r.URL.Query()
-	var url string
-	if urls, ok := q["url"]; ok {
-		url = urls[0]
-	}
-	if len(url) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		c.Debugf("No `url` specified for all.js")
-		return
-	}
+var serviceFuncs = []services.ServiceFunc{
+	services.Facebook1,
+	services.Twitter,
+	services.Google,
+}
 
+func allJs(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	ttl := web.JsTtl()
 	var js string
-	ttl := 300
+
 	if item, err := memcache.Get(c, url); err != nil {
 		client := urlfetch.Client(c)
-		js, err = web.AllJs(client, url)
+		js, err = web.AllJs(r, client, serviceFuncs)
 		if (err != nil) {
 			w.WriteHeader(http.StatusInternalServerError)
 			c.Debugf("Could not prepare all.js %v", err)
@@ -45,12 +44,10 @@ func gaeAllJs(w http.ResponseWriter, r *http.Request) {
 		js = string(item.Value)
 	}
 
-	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
-	fmt.Fprintf(w, js)
+	web.JsWrite(w, js)
 }
 
 func init() {
 	web.InitFileServer()
-	http.HandleFunc("/js/all.js", gaeAllJs)
+	http.HandleFunc("/js/all.js", allJs)
 }

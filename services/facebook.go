@@ -11,7 +11,7 @@ import (
 
 import neturl "net/url"
 
-func Facebook(client *http.Client, url string) ServiceResult {
+func Facebook1(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Facebook"
 
