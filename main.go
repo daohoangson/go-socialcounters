@@ -28,9 +28,23 @@ func allJs(w http.ResponseWriter, r *http.Request) {
 	web.JsWrite(w, r, js)
 }
 
+func dataJson(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{}
+	json, err := web.DataJson(r, client, serviceFuncs)
+	if (err != nil) {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Could not prepare data.json %v", err)
+		return
+	}
+
+	web.JsonWrite(w, r, json)
+}
+
 func main() {
 	web.InitFileServer()
 	http.HandleFunc("/js/all.js", allJs)
+	http.HandleFunc("/js/data.json", dataJson)
+	http.HandleFunc("/js/jquery.plugin.js", web.JQueryPluginJs)
 
 	port := os.Getenv("PORT")
 	if port == "" {

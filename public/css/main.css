@@ -3,6 +3,10 @@
 	font-size: 12px;
 }
 
+.socialcounters a {
+	text-decoration: none;
+}
+
 .sc-service {
 	border: 1px solid transparent;
 	display: inline-block;
