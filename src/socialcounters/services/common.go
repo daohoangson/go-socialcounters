@@ -8,7 +8,7 @@ func All(client *http.Client, url string) []ServiceResult {
 	ch := make(chan ServiceResult, 3)
 	results := []ServiceResult{}
 	services := []func(*http.Client, string) ServiceResult{
-		Facebook,
+		Facebook2,
 		Twitter,
 		Google,
 	}

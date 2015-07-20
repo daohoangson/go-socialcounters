@@ -27,7 +27,11 @@ func AllJs(client *http.Client, url string) (string, error) {
 		counts[serviceResult.Service] = serviceResult.Count
 
 		if serviceResult.Error != nil {
+			log.Printf("%s error: %v", serviceResult.Service, serviceResult.Error)
 			lastErr = serviceResult.Error
+		}
+		if len(serviceResult.Response) > 0 {
+			log.Printf("%s responded: %s", serviceResult.Service, serviceResult.Response)
 		}
 	}
 	if len(counts) == 0 && lastErr != nil {
