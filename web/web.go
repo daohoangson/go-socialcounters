@@ -14,18 +14,27 @@ import (
 	"github.com/daohoangson/go-socialcounters/services"
 )
 
-func AllJs(r *http.Request, client *http.Client, serviceFuncs []services.ServiceFunc) (string, error) {
+func GetUrl(r *http.Request) (string, error) {
 	q := r.URL.Query()
 	var url string
 	if urls, ok := q["url"]; ok {
 		url = urls[0]
 	}
 	if len(url) == 0 {
-		return "", errors.New("No `url` specified for all.js")
+		return "", errors.New("No `url` specified for data.json")
+	}
+
+	return url, nil
+}
+
+func AllJs(r *http.Request, countsJson string) (string, error) {
+	url, err := GetUrl(r);
+	if err != nil {
+		return "", err
 	}
 
 	jsData, err := ioutil.ReadFile("private/js/all.js")
-	if (err != nil) {
+	if err != nil {
 		return "", err
 	}
 	js := strings.Replace(string(jsData), "{url}", url, 1)
@@ -34,24 +43,6 @@ func AllJs(r *http.Request, client *http.Client, serviceFuncs []services.Service
 	css := css.MinifyFromFile("public/css/main.css")
 	js = strings.Replace(js, "{css}", css, 1)
 
-	serviceResults := services.Batch(client, serviceFuncs, url)
-	counts := make(map[string]float64)
-	var lastErr error
-	for _, serviceResult := range serviceResults {
-		counts[serviceResult.Service] = serviceResult.Count
-
-		if serviceResult.Error != nil {
-			lastErr = serviceResult.Error
-		}
-	}
-	if len(counts) == 0 && lastErr != nil {
-		return "", nil
-	}
-
-	countsJson, err := json.Marshal(counts)
-	if err != nil {
-		return "", err
-	}
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
 
 	return js, nil
@@ -88,14 +79,10 @@ func JQueryPluginJs(w http.ResponseWriter, r *http.Request) {
 	JsWrite(w, r, js)
 }
 
-func DataJson(r *http.Request, client *http.Client, serviceFuncs []services.ServiceFunc) (string, error) {
-	q := r.URL.Query()
-	var url string
-	if urls, ok := q["url"]; ok {
-		url = urls[0]
-	}
-	if len(url) == 0 {
-		return "{}", errors.New("No `url` specified for data.json")
+func CountsJson(r *http.Request, client *http.Client, serviceFuncs []services.ServiceFunc) (string, error) {
+	url, err := GetUrl(r);
+	if err != nil {
+		return "", err
 	}
 
 	serviceResults := services.Batch(client, serviceFuncs, url)

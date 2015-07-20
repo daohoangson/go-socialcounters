@@ -19,25 +19,24 @@ var serviceFuncs = []services.ServiceFunc{
 	services.Google,
 }
 
-func tryMemcache(w http.ResponseWriter, r *http.Request, dataName string,
-	dataFunc func(*http.Request, *http.Client, []services.ServiceFunc) (string, error),
-	writeFunc func(http.ResponseWriter, *http.Request, string)) {
-	c := appengine.NewContext(r)
+func getCountsJson(c appengine.Context, r *http.Request) (string, error) {
 	ttl := web.JsTtl(r)
-	memcacheKey := r.RequestURI
 	var data string
 
-	if item, err := memcache.Get(c, memcacheKey); err != nil {
+	url, err := web.GetUrl(r)
+	if err != nil {
+		return "", err
+	}
+
+	if item, err := memcache.Get(c, url); err != nil {
 		client := urlfetch.Client(c)
-		data, err = dataFunc(r, client, serviceFuncs)
+		data, err = web.CountsJson(r, client, serviceFuncs)
 		if (err != nil) {
-			w.WriteHeader(http.StatusInternalServerError)
-			c.Debugf("Could not prepare %s %v", dataName, err)
-			return
+			return "", err
 		}
 
 		item := &memcache.Item{
-			Key: memcacheKey,
+			Key: url,
 			Value: []byte(data),
 			Expiration: time.Duration(ttl) * time.Second,
 		}
@@ -46,15 +45,38 @@ func tryMemcache(w http.ResponseWriter, r *http.Request, dataName string,
 		data = string(item.Value)
 	}
 
-	writeFunc(w, r, data)
+	return data, nil
 }
 
 func allJs(w http.ResponseWriter, r *http.Request) {
-	tryMemcache(w, r, "all.js", web.AllJs, web.JsWrite)
+	c := appengine.NewContext(r)
+	countsJson, err := getCountsJson(c, r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		c.Debugf("Could not getCountsJson %v", err)
+		return
+	}
+
+	js, err := web.AllJs(r, countsJson)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		c.Debugf("Could not get web.AllJs %v", err)
+		return
+	}
+
+	web.JsWrite(w, r, js)
 }
 
 func dataJson(w http.ResponseWriter, r *http.Request) {
-	tryMemcache(w, r, "data.json", web.DataJson, web.JsonWrite)
+	c := appengine.NewContext(r)
+	countsJson, err := getCountsJson(c, r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		c.Debugf("Could not getCountsJson %v", err)
+		return
+	}
+
+	web.JsonWrite(w, r, countsJson)
 }
 
 func init() {

@@ -16,12 +16,22 @@ var serviceFuncs = []services.ServiceFunc{
 	services.Google,
 }
 
+func getCountsJson(r *http.Request) (string, error) {
+	return web.CountsJson(r, &http.Client{}, serviceFuncs)
+}
+
 func allJs(w http.ResponseWriter, r *http.Request) {
-	client := &http.Client{}
-	js, err := web.AllJs(r, client, serviceFuncs)
-	if (err != nil) {
+	countsJson, err := getCountsJson(r)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Could not prepare all.js %v", err)
+		log.Printf("Could not getCountsJson %v", err)
+		return
+	}
+
+	js, err := web.AllJs(r, countsJson)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Could not get web.AllJs %v", err)
 		return
 	}
 
@@ -29,15 +39,14 @@ func allJs(w http.ResponseWriter, r *http.Request) {
 }
 
 func dataJson(w http.ResponseWriter, r *http.Request) {
-	client := &http.Client{}
-	json, err := web.DataJson(r, client, serviceFuncs)
+	countsJson, err := getCountsJson(r)
 	if (err != nil) {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Could not prepare data.json %v", err)
+		log.Printf("Could not getCountsJson %v", err)
 		return
 	}
 
-	web.JsonWrite(w, r, json)
+	web.JsonWrite(w, r, countsJson)
 }
 
 func main() {
