@@ -29,7 +29,7 @@ func Batch(client *http.Client, serviceFuncs []ServiceFunc, url string) []Servic
 
 type ServiceResult struct {
 	Service string
-	Count float64
+	Count int64
 	Error error
 	Response string
 }

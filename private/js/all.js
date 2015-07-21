@@ -44,9 +44,13 @@ if (typeof jQuery === 'function') {
 				.text(service)
 				.appendTo($service);
 
+			var count = counts[service];
+			if (typeof count.toLocaleString === 'function') {
+				count = count.toLocaleString();
+			}
 			var $count = $('<span />')
 				.addClass('sc-count')
-				.text(counts[service])
+				.text(count)
 				.appendTo($service)
 
 			$service.appendTo($div);

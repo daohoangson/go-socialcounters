@@ -54,7 +54,11 @@ if (typeof jQuery === 'function') {
 
 				if (!!mapping.count) {
 					var $count = self.find('[rel=' + mapping.count + ']');
-					$count.text(counts[service]);
+					var count = counts[service];
+					if (typeof count.toLocaleString === 'function') {
+						count = count.toLocaleString();
+					}
+					$count.text(count);
 				}
 			}
 

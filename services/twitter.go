@@ -34,7 +34,7 @@ func Twitter(client *http.Client, url string) ServiceResult {
 			break
 		}
 
-		result.Count = tr.Count
+		result.Count = int64(tr.Count)
 	}
 
 	return result

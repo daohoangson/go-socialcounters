@@ -55,9 +55,8 @@ func Google(client *http.Client, url string) ServiceResult {
 	}
 	
 	count, err := strconv.ParseFloat(matches[1], 64)
-	if (err == nil) {
-		result.Error = err
-		result.Count = count
+	if err == nil {
+		result.Count = int64(count)
 	}
 
 	return result
