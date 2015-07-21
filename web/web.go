@@ -89,6 +89,10 @@ func CountsJson(r *http.Request, client *http.Client, serviceFuncs []services.Se
 		return "{}", err
 	}
 
+	if !RulesAllowUrl(url) {
+		return "{}", nil
+	}
+
 	serviceResults := services.Batch(client, serviceFuncs, url)
 	dataMap := make(map[string]int64)
 	var serviceError error
