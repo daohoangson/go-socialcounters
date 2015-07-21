@@ -32,15 +32,15 @@ func getCountsJson(c appengine.Context, r *http.Request) (string, error) {
 		client := urlfetch.Client(c)
 		data, err = web.CountsJson(r, client, serviceFuncs)
 		if (err != nil) {
-			return "", err
+			c.Debugf("web.CountsJson error %v", err)
+		} else {
+			item := &memcache.Item{
+				Key: url,
+				Value: []byte(data),
+				Expiration: time.Duration(ttl) * time.Second,
+			}
+			memcache.Add(c, item);
 		}
-
-		item := &memcache.Item{
-			Key: url,
-			Value: []byte(data),
-			Expiration: time.Duration(ttl) * time.Second,
-		}
-		memcache.Add(c, item);
 	} else {
 		data = string(item.Value)
 	}

@@ -86,13 +86,18 @@ func JQueryPluginJs(w http.ResponseWriter, r *http.Request) {
 func CountsJson(r *http.Request, client *http.Client, serviceFuncs []services.ServiceFunc) (string, error) {
 	url, err := GetUrl(r);
 	if err != nil {
-		return "", err
+		return "{}", err
 	}
 
 	serviceResults := services.Batch(client, serviceFuncs, url)
-	dataMap := make(map[string]float64)
+	dataMap := make(map[string]int64)
+	var serviceError error
 	for _, serviceResult := range serviceResults {
 		dataMap[serviceResult.Service] = serviceResult.Count
+
+		if serviceResult.Error != nil {
+			serviceError = serviceResult.Error
+		}
 	}
 	
 	dataByte, err := json.Marshal(dataMap)
@@ -100,7 +105,7 @@ func CountsJson(r *http.Request, client *http.Client, serviceFuncs []services.Se
 		return "{}", err
 	}
 
-	return string(dataByte), nil
+	return string(dataByte), serviceError
 }
 
 func JsonWrite(w http.ResponseWriter, r *http.Request, json string) {
