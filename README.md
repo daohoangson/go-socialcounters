@@ -65,11 +65,11 @@ $('#target').socialcounters();
 
  * `url`: specify an url to fetch data. By default, it will use the current url.
  * `callback`: specify a function to run after data comes back from app server.
- * 
- 
+
+
 #### Mappings
 It is required to mark your elements with `rel="something"` for the plugin to fill data correctly. The default mappings include:
 
  * Links: `facebook-link`, `twitter-link`, `google-link`
  * Counts: `facebook-count`, `twitter-count`, `google-count`
- 
+
