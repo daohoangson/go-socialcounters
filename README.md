@@ -68,8 +68,40 @@ $('#target').socialcounters();
 
 
 #### Mappings
+
 It is required to mark your elements with `rel="something"` for the plugin to fill data correctly. The default mappings include:
 
  * Links: `facebook-link`, `twitter-link`, `google-link`
  * Counts: `facebook-count`, `twitter-count`, `google-count`
 
+## Deploy
+
+The app has been pre-configured for easy deployment to Google App Engine and Heroku.
+
+### Google App Engine
+
+Create your account and everything (see [Google](https://cloud.google.com/appengine/docs/go/gettingstarted/uploading)'s
+document). Setup the SDK on your computer (see [here](https://cloud.google.com/appengine/docs/go/gettingstarted/devenvironment))
+then execute the deploy command:
+
+````
+goapp deploy
+````
+
+And you are done!
+
+#### Further configuration
+
+Depending on your need, you may want to enable dedicated memcache for improved performance.
+
+### Heroku
+
+Create your account, setup the (Heroku CLI)[https://devcenter.heroku.com/articles/heroku-command] and do a push from your
+forked repo:
+
+````
+git push heroku master
+````
+
+The app should be deployed without issue. Please note that the Heroku deployment does not have any caching so you should
+put it behind a CDN for better server health.
