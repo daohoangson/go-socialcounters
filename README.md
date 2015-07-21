@@ -96,7 +96,7 @@ Depending on your need, you may want to enable dedicated memcache for improved p
 
 ### Heroku
 
-Create your account, setup the (Heroku CLI)[https://devcenter.heroku.com/articles/heroku-command] and do a push from your
+Create your account, setup the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-command) and do a push from your
 forked repo:
 
 ````
