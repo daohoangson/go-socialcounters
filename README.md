@@ -27,3 +27,49 @@ After deploying the app to your server, simply include the script in your websit
  * `target` (_optional_): by default, `all.js` looks for `.socialcounters-container` in the DOM and insert its buttons
  into that element. You can use `target` param to change the selector which is used to find the container element.
  When no container is found, `all.js` will append into `body`.
+
+### jQuery Plugin
+jQuery Plugin is the advanced option if you want to customize the buttons look and feel to match your website design.
+You will need to include the plugin script and layout the elements on the page yourself (see demo for pointers).
+Finally, call `socialcounters()` on the jQuery object to get counters data from the server and populate them.
+
+````
+<script src="//socialcounters.domain.com/js/jquery.plugin.js"></script>
+<link rel="stylesheet" href="//socialcounters.domain.com/css/main.css">
+
+...
+
+<div id="target" class="socialcounters">
+  <a class="sc-service sc-facebook" rel="facebook-link">
+    <span class="sc-data-url">Facebook</span>
+    <span class="sc-count" rel="facebook-count">0</span>
+  </a>
+  <a class="sc-service sc-twitter" rel="twitter-link">
+    <span class="sc-data-url">Twitter</span>
+    <span class="sc-count" rel="twitter-count">0</span>
+  </a>
+  <a class="sc-service sc-google" rel="google-link">
+    <span class="sc-data-url">Google</span>
+    <span class="sc-count" rel="google-count">0</span>
+  </a>
+</div>
+
+...
+
+<script>
+$('#target').socialcounters();
+</script>
+````
+
+#### Options
+
+ * `url`: specify an url to fetch data. By default, it will use the current url.
+ * `callback`: specify a function to run after data comes back from app server.
+ * 
+ 
+#### Mappings
+It is required to mark your elements with `rel="something"` for the plugin to fill data correctly. The default mappings include:
+
+ * Links: `facebook-link`, `twitter-link`, `google-link`
+ * Counts: `facebook-count`, `twitter-count`, `google-count`
+ 
