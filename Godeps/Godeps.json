@@ -5,6 +5,18 @@
 		{
 			"ImportPath": "github.com/daohoangson/go-minify/css",
 			"Rev": "21824099efdd57011361c6d7047160846b3fec78"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/buffer",
+			"Rev": "8ff0a82a07bd36d4cf1e8728015553e67d720100"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/minify",
+			"Rev": "e74d58454ee3940b110e565fe340adfdc96d5e26"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse",
+			"Rev": "fce57fe8d2b937fcf480e86dd0fead6f81b8247e"
 		}
 	]
 }
