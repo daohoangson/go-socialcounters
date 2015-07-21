@@ -52,7 +52,7 @@ if (typeof jQuery === 'function') {
 			$service.appendTo($div);
 		}
 
-		var $container = $('.socialcounters-container');
+		var $container = $({target});
 		if ($container.length > 0) {
 			$div.appendTo($container)
 		} else {

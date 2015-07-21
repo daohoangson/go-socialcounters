@@ -7,7 +7,11 @@
     </head>
     <body>
         <div class="socialcounters-container">&nbsp;</div>
-        <p>The buttons should show up above!</p>
+        <p>The buttons should show up above!<br />
+        &lt;script src="js/all.js?url=http://github.com&gt;&lt;/script&gt;<br />
+        It does that because the html contains a &lt;div class="socialcounters-container" /&gt;
+        and the <span style="font-family: Courier">all.js</span> script looks for .socialcounters-container by default
+        (you can change with parameter <span style="font-family: Courier">target</span>, see <a href="demo_alljs_target.html">demo</a>).</p>
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>

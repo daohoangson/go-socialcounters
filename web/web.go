@@ -44,6 +44,7 @@ func AllJs(r *http.Request, countsJson string) (string, error) {
 	js = strings.Replace(js, "{css}", css, 1)
 
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
+	js = strings.Replace(js, "{target}", TargetJson(r), 1)
 
 	return js, nil
 }
@@ -114,6 +115,20 @@ func JsonWrite(w http.ResponseWriter, r *http.Request, json string) {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", JsTtl(r)))
 		fmt.Fprintf(w, json)
 	}
+}
+
+func TargetJson(r *http.Request) string {
+	target := "'.socialcounters-container'";
+
+	q := r.URL.Query()
+	if targets, ok := q["target"]; ok {
+		targetByte, err := json.Marshal(targets[0])
+		if err == nil {
+			target = string(targetByte);
+		}
+	}
+
+	return target;
 }
 
 func InitFileServer() {
