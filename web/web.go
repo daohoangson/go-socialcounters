@@ -37,9 +37,12 @@ func AllJs(r *http.Request, countsJson string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	js := strings.Replace(string(jsData), "{url}", url, 1)
+	js := MinifyJs(string(jsData))
+	js = strings.Replace(js, "{url}", url, 1)
 	js = strings.Replace(js, "{now}", fmt.Sprintf("%v", time.Now()), 1)
 
+	// keep using css.MinifyFromFile because it does the data uri inline for us
+	// TODO: drop this github.com/daohoangson/go-minify/css dependency
 	css := css.MinifyFromFile("public/css/main.css")
 	js = strings.Replace(js, "{css}", css, 1)
 
