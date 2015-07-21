@@ -37,7 +37,7 @@ if (typeof jQuery === 'function') {
 		var callback = 'socialcounters_' + options.url.replace(/[^0-9a-z_]/gi, '');
 		window[callback] = function(counts) {
 			for (var service in counts) {
-				if (typeof options.mapping[service] === '_undefined') {
+				if (typeof options.mapping[service] === 'undefined') {
 					continue;
 				}
 				var mapping = options.mapping[service];

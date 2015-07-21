@@ -11,7 +11,7 @@ if (typeof jQuery === 'function') {
 
 		for (var i = 0; i < services.length; i++) {
 			var service = services[i];
-			if (typeof counts[service] === '_undefined') {
+			if (typeof counts[service] === 'undefined') {
 				continue;
 			}
 
