@@ -56,7 +56,7 @@ func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 
 func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	jsData, err := ioutil.ReadFile("private/js/jquery.plugin.js")
-	if (err != nil) {
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		u.Logf("web.JqueryPluginJs: ReadFile error %v", err)
 		return
@@ -83,7 +83,7 @@ func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
 	for _, serviceResult := range serviceResults {
 		dataMap[serviceResult.Service] = serviceResult.Count
 	}
-	
+
 	dataByte, err := json.Marshal(dataMap)
 	if err != nil {
 		return url, "{}", err
@@ -95,17 +95,17 @@ func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
 }
 
 func parseTargetAsJson(r *http.Request) string {
-	target := "'.socialcounters-container'";
+	target := "'.socialcounters-container'"
 
 	q := r.URL.Query()
 	if targets, ok := q["target"]; ok {
 		targetByte, err := json.Marshal(targets[0])
 		if err == nil {
-			target = string(targetByte);
+			target = string(targetByte)
 		}
 	}
 
-	return target;
+	return target
 }
 
 func parseTtl(r *http.Request) int64 {
@@ -143,7 +143,7 @@ func writeJson(w http.ResponseWriter, r *http.Request, json string) {
 	}
 
 	if len(callback) > 0 {
-		js := fmt.Sprintf("%s(%s);", callback, json);
+		js := fmt.Sprintf("%s(%s);", callback, json)
 		writeJs(w, r, js)
 	} else {
 		w.Header().Set("Content-Type", "application/json")

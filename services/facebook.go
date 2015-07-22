@@ -43,7 +43,7 @@ func Facebook1(client *http.Client, url string) ServiceResult {
 	if matches == nil {
 		return result
 	}
-	
+
 	count, err := strconv.ParseInt(matches[1], 10, 64)
 	if err == nil {
 		result.Count = count
@@ -82,7 +82,7 @@ func Facebook2(client *http.Client, url string) ServiceResult {
 	if matches == nil {
 		return result
 	}
-	
+
 	count, err := strconv.ParseInt(matches[1], 10, 64)
 	if err == nil {
 		result.Count = count

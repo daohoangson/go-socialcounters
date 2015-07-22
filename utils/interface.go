@@ -7,7 +7,6 @@ import (
 )
 
 type Utils interface {
-
 	ServiceFuncs() []services.ServiceFunc
 
 	HttpClient() *http.Client
@@ -19,7 +18,6 @@ type Utils interface {
 	DbGet(key string) (map[string]string, error)
 
 	Logf(format string, args ...interface{})
-
 }
 
 type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils

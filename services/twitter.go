@@ -10,7 +10,7 @@ import neturl "net/url"
 
 type twitterResponse struct {
 	Count float64
-	Url string
+	Url   string
 }
 
 func Twitter(client *http.Client, url string) ServiceResult {

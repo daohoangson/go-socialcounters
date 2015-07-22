@@ -1,8 +1,8 @@
 package web
 
 import (
-    "github.com/tdewolff/minify"
-    "github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/js"
 )
 
 func MinifyJs(js string) string {
@@ -17,6 +17,7 @@ func MinifyJs(js string) string {
 }
 
 var minifier *minify.Minify
+
 func getMinifier() *minify.Minify {
 	if minifier == nil {
 		minifier = minify.New()

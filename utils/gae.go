@@ -29,6 +29,7 @@ var serviceFuncs = []services.ServiceFunc{
 	services.Twitter,
 	services.Google,
 }
+
 func (u GAE) ServiceFuncs() []services.ServiceFunc {
 	return serviceFuncs
 }
@@ -39,16 +40,16 @@ func (u GAE) HttpClient() *http.Client {
 
 func (u GAE) MemorySet(key string, value []byte, ttl int64) error {
 	item := &memcache.Item{
-		Key: key,
-		Value: value,
+		Key:        key,
+		Value:      value,
 		Expiration: time.Duration(ttl) * time.Second,
 	}
 
-	return memcache.Add(u.context, item);
+	return memcache.Add(u.context, item)
 }
 
 func (u GAE) MemoryGet(key string) ([]byte, error) {
-	item, err := memcache.Get(u.context, key);
+	item, err := memcache.Get(u.context, key)
 	if err != nil {
 		return nil, err
 	}

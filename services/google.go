@@ -14,7 +14,7 @@ func Google(client *http.Client, url string) ServiceResult {
 	result.Service = "Google"
 
 	urlJson, err := json.Marshal(url)
-	if (err != nil) {
+	if err != nil {
 		result.Error = err
 		return result
 	}
@@ -53,7 +53,7 @@ func Google(client *http.Client, url string) ServiceResult {
 	if matches == nil {
 		return result
 	}
-	
+
 	count, err := strconv.ParseFloat(matches[1], 64)
 	if err == nil {
 		result.Count = int64(count)

@@ -26,6 +26,7 @@ var serviceFuncs = []services.ServiceFunc{
 	services.Twitter,
 	services.Google,
 }
+
 func (u Other) ServiceFuncs() []services.ServiceFunc {
 	return serviceFuncs
 }
@@ -67,6 +68,7 @@ func (u Other) Logf(format string, args ...interface{}) {
 
 var mcConn *mc.Conn
 var mcPrepared = false
+
 func getMcConn(u Other) *mc.Conn {
 	if !mcPrepared {
 		if addr := os.Getenv("MEMCACHIER_SERVERS"); addr != "" {

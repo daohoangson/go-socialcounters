@@ -16,11 +16,11 @@ func Batch(client *http.Client, serviceFuncs []ServiceFunc, url string) []Servic
 
 	for {
 		select {
-			case r := <-ch:
-				results = append(results, r)
-				if len(results) == len(serviceFuncs) {
-					return results
-				}
+		case r := <-ch:
+			results = append(results, r)
+			if len(results) == len(serviceFuncs) {
+				return results
+			}
 		}
 	}
 
@@ -28,9 +28,9 @@ func Batch(client *http.Client, serviceFuncs []ServiceFunc, url string) []Servic
 }
 
 type ServiceResult struct {
-	Service string
-	Count int64
-	Error error
+	Service  string
+	Count    int64
+	Error    error
 	Response string
 }
 
