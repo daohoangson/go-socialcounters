@@ -5,12 +5,17 @@ import (
 	"regexp"
 )
 
+var basic *regexp.Regexp
 var whitelistPrepared = false
 var whitelist *regexp.Regexp
 var blacklistPrepared = false
 var blacklist *regexp.Regexp
 
 func RulesAllowUrl(url string) bool {
+	if getBasic().MatchString(url) {
+		return false
+	}
+
 	if wl := getWhitelist(); wl != nil {
 		if !wl.MatchString(url) {
 			return false
@@ -24,6 +29,15 @@ func RulesAllowUrl(url string) bool {
 	}
 
 	return true
+}
+
+func getBasic() *regexp.Regexp {
+	if basic == nil {
+		// this regex should filter out all weird strings
+		basic = regexp.MustCompile(`^https?://[^\r\n]$`)
+	}
+
+	return basic
 }
 
 func getWhitelist() *regexp.Regexp {

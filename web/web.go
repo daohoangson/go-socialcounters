@@ -2,7 +2,6 @@ package web
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,30 +11,22 @@ import (
 
 	"github.com/daohoangson/go-minify/css"
 	"github.com/daohoangson/go-socialcounters/services"
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-func GetUrl(r *http.Request) (string, error) {
-	q := r.URL.Query()
-	var url string
-	if urls, ok := q["url"]; ok {
-		url = urls[0]
-	}
-	if len(url) == 0 {
-		return "", errors.New("No `url` specified for data.json")
-	}
-
-	return url, nil
-}
-
-func AllJs(r *http.Request, countsJson string) (string, error) {
-	url, err := GetUrl(r);
+func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
+	url, countsJson, err := getCountsJson(u, r)
 	if err != nil {
-		return "", err
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Logf("web.AllJs: getCountsJson error %v", err)
+		return
 	}
 
 	jsData, err := ioutil.ReadFile("private/js/all.js")
 	if err != nil {
-		return "", err
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Logf("web.AllJs: ReadFile error %v", err)
+		return
 	}
 	js := MinifyJs(string(jsData))
 	js = strings.Replace(js, "{url}", url, 1)
@@ -47,89 +38,63 @@ func AllJs(r *http.Request, countsJson string) (string, error) {
 	js = strings.Replace(js, "{css}", css, 1)
 
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
-	js = strings.Replace(js, "{target}", TargetJson(r), 1)
+	js = strings.Replace(js, "{target}", parseTargetAsJson(r), 1)
 
-	return js, nil
+	writeJs(w, r, js)
 }
 
-func JsTtl(r *http.Request) uint64 {
-	q := r.URL.Query()
-	if ttls, ok := q["ttl"]; ok {
-		ttl, err := strconv.ParseUint(ttls[0], 10, 64)
-		if err == nil {
-			return ttl
-		}
+func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
+	_, countsJson, err := getCountsJson(u, r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Logf("web.DataJson: getCountsJson error %v", err)
+		return
 	}
 
-	return 300
+	writeJson(w, r, countsJson)
 }
 
-func JsWrite(w http.ResponseWriter, r *http.Request, js string) {
-	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", JsTtl(r)))
-	fmt.Fprintf(w, js)
-}
-
-func JQueryPluginJs(w http.ResponseWriter, r *http.Request) {
+func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	jsData, err := ioutil.ReadFile("private/js/jquery.plugin.js")
 	if (err != nil) {
 		w.WriteHeader(http.StatusNotFound)
+		u.Logf("web.JqueryPluginJs: ReadFile error %v", err)
 		return
 	}
 
 	jsonUrl := fmt.Sprintf("//%s/js/data.json", r.Host)
 	js := strings.Replace(string(jsData), "{jsonUrl}", jsonUrl, 1)
 
-	JsWrite(w, r, js)
+	writeJs(w, r, js)
 }
 
-func CountsJson(r *http.Request, client *http.Client, serviceFuncs []services.ServiceFunc) (string, error) {
-	url, err := GetUrl(r);
-	if err != nil {
-		return "{}", err
-	}
-
+func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
+	url := parseUrl(r)
 	if !RulesAllowUrl(url) {
-		return "{}", nil
+		return url, "{}", nil
 	}
 
-	serviceResults := services.Batch(client, serviceFuncs, url)
+	if value, err := u.MemoryGet(url); err == nil {
+		return url, string(value), nil
+	}
+
+	serviceResults := services.Batch(u.HttpClient(), u.ServiceFuncs(), url)
 	dataMap := make(map[string]int64)
-	var serviceError error
 	for _, serviceResult := range serviceResults {
 		dataMap[serviceResult.Service] = serviceResult.Count
-
-		if serviceResult.Error != nil {
-			serviceError = serviceResult.Error
-		}
 	}
 	
 	dataByte, err := json.Marshal(dataMap)
 	if err != nil {
-		return "{}", err
-	}
-
-	return string(dataByte), serviceError
-}
-
-func JsonWrite(w http.ResponseWriter, r *http.Request, json string) {
-	q := r.URL.Query()
-	var callback string
-	if callbacks, ok := q["callback"]; ok {
-		callback = callbacks[0]
-	}
-
-	if len(callback) > 0 {
-		js := fmt.Sprintf("%s(%s);", callback, json);
-		JsWrite(w, r, js)
+		return url, "{}", err
 	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", JsTtl(r)))
-		fmt.Fprintf(w, json)
+		u.MemorySet(url, dataByte, parseTtl(r))
 	}
+
+	return url, string(dataByte), nil
 }
 
-func TargetJson(r *http.Request) string {
+func parseTargetAsJson(r *http.Request) string {
 	target := "'.socialcounters-container'";
 
 	q := r.URL.Query()
@@ -143,7 +108,46 @@ func TargetJson(r *http.Request) string {
 	return target;
 }
 
-func InitFileServer() {
-	fs := http.FileServer(http.Dir("public"))
-	http.Handle("/", fs)
+func parseTtl(r *http.Request) int64 {
+	q := r.URL.Query()
+	if ttls, ok := q["ttl"]; ok {
+		ttl, err := strconv.ParseInt(ttls[0], 10, 64)
+		if err == nil {
+			return ttl
+		}
+	}
+
+	return 300
+}
+
+func parseUrl(r *http.Request) string {
+	q := r.URL.Query()
+	if urls, ok := q["url"]; ok {
+		return urls[0]
+	}
+
+	return ""
+}
+
+func writeJs(w http.ResponseWriter, r *http.Request, js string) {
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
+	fmt.Fprintf(w, js)
+}
+
+func writeJson(w http.ResponseWriter, r *http.Request, json string) {
+	q := r.URL.Query()
+	var callback string
+	if callbacks, ok := q["callback"]; ok {
+		callback = callbacks[0]
+	}
+
+	if len(callback) > 0 {
+		js := fmt.Sprintf("%s(%s);", callback, json);
+		writeJs(w, r, js)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
+		fmt.Fprintf(w, json)
+	}
 }
