@@ -103,5 +103,12 @@ forked repo:
 git push heroku master
 ````
 
-The app should be deployed without issue. Please note that the Heroku deployment does not have any caching so you should
-put it behind a CDN for better server health.
+The app should be deployed without issue.
+
+#### Further configuration
+
+To make use of memory caching, enable the [Heroku MemCachier add-on](https://devcenter.heroku.com/articles/memcachier) for your application.
+
+````
+heroku addons:create memcachier
+````
