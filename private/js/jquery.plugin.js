@@ -2,6 +2,7 @@ if (typeof jQuery === 'function') {
 	jQuery.fn.socialcounters = function(options) {
 		options = $.extend(true, {
 			url: 'this',
+			shorten: false,
 			callback: null,
 			mapping: {
 				Facebook: {
@@ -55,8 +56,17 @@ if (typeof jQuery === 'function') {
 				if (!!mapping.count) {
 					var $count = self.find('[rel=' + mapping.count + ']');
 					var count = counts[service];
-					if (typeof count.toLocaleString === 'function') {
-						count = count.toLocaleString();
+
+					if (options.shorten) {
+						if (count >= 1000000) {
+							count = (Math.round(count / 1000000.0 * 10) / 10) + 'm';
+						} else if (count >= 1000) {
+							count = (Math.round(count / 1000.0 * 10) / 10) + 'k';
+						}
+					} else {
+						if (typeof count.toLocaleString === 'function') {
+							count = count.toLocaleString();
+						}
 					}
 					$count.text(count);
 				}

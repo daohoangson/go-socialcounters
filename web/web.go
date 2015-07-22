@@ -22,6 +22,13 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	urlByte, err := json.Marshal(url)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Logf("web.AllJs: json.Marshal(url) error %v", err)
+		return
+	}
+
 	jsData, err := ioutil.ReadFile("private/js/all.js")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -29,7 +36,7 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	js := MinifyJs(string(jsData))
-	js = strings.Replace(js, "{url}", url, 1)
+	js = strings.Replace(js, "{url}", string(urlByte), 1)
 	js = strings.Replace(js, "{now}", fmt.Sprintf("%v", time.Now()), 1)
 
 	// keep using css.MinifyFromFile because it does the data uri inline for us
@@ -38,6 +45,7 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	js = strings.Replace(js, "{css}", css, 1)
 
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
+	js = strings.Replace(js, "{shorten}", parseShortenAsBool(r), 1)
 	js = strings.Replace(js, "{target}", parseTargetAsJson(r), 1)
 
 	writeJs(w, r, js)
@@ -92,6 +100,15 @@ func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
 	}
 
 	return url, string(dataByte), nil
+}
+
+func parseShortenAsBool(r *http.Request) string {
+	q := r.URL.Query()
+	if _, ok := q["shorten"]; ok {
+		return "true"
+	}
+
+	return "false"
 }
 
 func parseTargetAsJson(r *http.Request) string {

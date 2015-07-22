@@ -23,7 +23,13 @@
         </div><br />
 
         <form>
-            <input id="url" placeholder="URL" value="http://github.com" />
+            <input id="url" placeholder="URL" value="http://github.com" /><br />
+
+            <label>
+                <input type="checkbox" id="shorten" checked="checked" />
+                Shorten
+            </label><br />
+
             <input type="submit" id="btn" />
         </form>
 
@@ -34,6 +40,7 @@
             (function($) {
                 var $target = $('#target').hide();
                 var $url = $('#url');
+                var $shorten = $('#shorten');
                 var $btn = $('#btn')
 
                 $btn.click(function(e) {
@@ -41,6 +48,7 @@
 
                     $target.socialcounters({
                         url: $url.val(),
+                        shorten: $shorten.is(':checked'),
                         callback: function(url, counts) {
                             $target.show();
                         }

@@ -22,6 +22,8 @@ After deploying the app to your server, simply include the script in your websit
 #### Parameters
 
  * `url` (**required**)
+ * `shorten` (_optional_): determine whether the counters should be shortened to use "m" (million) or "k" (thousand) suffices.
+ This feature is off by default.
  * `ttl` (_optional_): specify the cache max-age value. Useful if you put your server behind a some caching service or CDN.
  This should help you to control the actual load on the app server.
  * `target` (_optional_): by default, `all.js` looks for `.socialcounters-container` in the DOM and insert its buttons
@@ -65,7 +67,8 @@ $('#target').socialcounters();
 
  * `url`: specify an url to fetch data. By default, it will use the current url.
  * `callback`: specify a function to run after data comes back from app server.
-
+ * `shorten`: determine whether the counters should be shortened to use "m" (million) or "k" (thousand) suffices.
+ This feature is off by default.
 
 #### Mappings
 

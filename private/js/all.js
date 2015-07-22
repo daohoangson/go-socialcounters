@@ -1,6 +1,8 @@
 if (typeof jQuery === 'function') {
 	(function($){
-		var url = '{url}';
+		var url = {url};
+		var target = {target};
+		var shorten = {shorten};
 		var now = '{now}';
 		var css = '{css}';
 		var counts = {counts};
@@ -45,8 +47,16 @@ if (typeof jQuery === 'function') {
 				.appendTo($service);
 
 			var count = counts[service];
-			if (typeof count.toLocaleString === 'function') {
-				count = count.toLocaleString();
+			if (shorten) {
+				if (count >= 1000000) {
+					count = (Math.round(count / 1000000.0 * 10) / 10) + 'm';
+				} else if (count >= 1000) {
+					count = (Math.round(count / 1000.0 * 10) / 10) + 'k';
+				}
+			} else {
+				if (typeof count.toLocaleString === 'function') {
+					count = count.toLocaleString();
+				}
 			}
 			var $count = $('<span />')
 				.addClass('sc-count')
@@ -56,7 +66,7 @@ if (typeof jQuery === 'function') {
 			$service.appendTo($div);
 		}
 
-		var $container = $({target});
+		var $container = $(target);
 		if ($container.length > 0) {
 			$div.appendTo($container)
 		} else {
