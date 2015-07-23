@@ -17,7 +17,9 @@ type Utils interface {
 	DbSet(key string, hash map[string]string) error
 	DbGet(key string) (map[string]string, error)
 
-	Logf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Debugf(format string, args ...interface{})
 }
 
 type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils

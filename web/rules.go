@@ -3,6 +3,8 @@ package web
 import (
 	"os"
 	"regexp"
+
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 var basic *regexp.Regexp
@@ -11,19 +13,22 @@ var whitelist *regexp.Regexp
 var blacklistPrepared = false
 var blacklist *regexp.Regexp
 
-func RulesAllowUrl(url string) bool {
+func RulesAllowUrl(u utils.Utils, url string) bool {
 	if getBasic().MatchString(url) {
+		u.Debugf("web.RulesAllowUrl: %s is not a valid url", url)
 		return false
 	}
 
 	if wl := getWhitelist(); wl != nil {
 		if !wl.MatchString(url) {
+			u.Debugf("web.RulesAllowUrl: %s is not whitelisted", url)
 			return false
 		}
 	}
 
 	if bl := getBlacklist(); bl != nil {
 		if bl.MatchString(url) {
+			u.Debugf("web.RulesAllowUrl: %s is blacklisted", url)
 			return false
 		}
 	}

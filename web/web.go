@@ -18,21 +18,21 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	url, countsJson, err := getCountsJson(u, r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		u.Logf("web.AllJs: getCountsJson error %v", err)
+		u.Errorf("web.AllJs: getCountsJson error %v", err)
 		return
 	}
 
 	urlByte, err := json.Marshal(url)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		u.Logf("web.AllJs: json.Marshal(url) error %v", err)
+		u.Errorf("web.AllJs: json.Marshal(url) error %v", err)
 		return
 	}
 
 	jsData, err := ioutil.ReadFile("private/js/all.js")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		u.Logf("web.AllJs: ReadFile error %v", err)
+		u.Errorf("web.AllJs: ReadFile error %v", err)
 		return
 	}
 	js := MinifyJs(string(jsData))
@@ -55,7 +55,7 @@ func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	_, countsJson, err := getCountsJson(u, r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		u.Logf("web.DataJson: getCountsJson error %v", err)
+		u.Errorf("web.DataJson: getCountsJson error %v", err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	jsData, err := ioutil.ReadFile("private/js/jquery.plugin.js")
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		u.Logf("web.JqueryPluginJs: ReadFile error %v", err)
+		u.Errorf("web.JqueryPluginJs: ReadFile error %v", err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 
 func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
 	url := parseUrl(r)
-	if !RulesAllowUrl(url) {
+	if !RulesAllowUrl(u, url) {
 		return url, "{}", nil
 	}
 

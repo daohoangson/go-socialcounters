@@ -66,6 +66,14 @@ func (u GAE) DbGet(key string) (map[string]string, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (u GAE) Logf(format string, args ...interface{}) {
+func (u GAE) Errorf(format string, args ...interface{}) {
+	u.context.Errorf(format, args...)
+}
+
+func (u GAE) Infof(format string, args ...interface{}) {
+	u.context.Infof(format, args...)
+}
+
+func (u GAE) Debugf(format string, args ...interface{}) {
 	u.context.Debugf(format, args...)
 }

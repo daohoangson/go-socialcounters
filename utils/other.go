@@ -62,7 +62,15 @@ func (u Other) DbGet(key string) (map[string]string, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (u Other) Logf(format string, args ...interface{}) {
+func (u Other) Errorf(format string, args ...interface{}) {
+	log.Printf(format, args...)
+}
+
+func (u Other) Infof(format string, args ...interface{}) {
+	log.Printf(format, args...)
+}
+
+func (u Other) Debugf(format string, args ...interface{}) {
 	log.Printf(format, args...)
 }
 
@@ -80,18 +88,18 @@ func getMcConn(u Other) *mc.Conn {
 					// only try to authenticate if both username and password are set
 					err = m.Auth(os.Getenv("MEMCACHIER_USERNAME"), os.Getenv("MEMCACHIER_PASSWORD"))
 					if err == nil {
-						u.Logf("Other.getMcConn: mc.Auth ok")
+						u.Infof("Other.getMcConn: mc.Auth ok")
 						mcConn = m
 					} else {
-						u.Logf("Other.getMcConn: mc.Auth error %v", err)
+						u.Errorf("Other.getMcConn: mc.Auth error %v", err)
 					}
 				} else {
 					// most of the case, the server does not require authentication
-					u.Logf("Other.getMcConn: mc.Dial ok")
+					u.Infof("Other.getMcConn: mc.Dial ok")
 					mcConn = m
 				}
 			} else {
-				u.Logf("Other.getMcConn: mc.Dial error %v", err)
+				u.Errorf("Other.getMcConn: mc.Dial error %v", err)
 			}
 		}
 
