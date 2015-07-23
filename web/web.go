@@ -44,6 +44,10 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	css := css.MinifyFromFile("public/css/main.css")
 	js = strings.Replace(js, "{css}", css, 1)
 
+	js = strings.Replace(js, "{facebooksvg}", readFileAsJson("private/img/facebook.svg"), 1)
+	js = strings.Replace(js, "{twittersvg}", readFileAsJson("private/img/twitter.svg"), 1)
+	js = strings.Replace(js, "{googlesvg}", readFileAsJson("private/img/google.svg"), 1)
+
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
 	js = strings.Replace(js, "{shorten}", parseShortenAsBool(r), 1)
 	js = strings.Replace(js, "{target}", parseTargetAsJson(r), 1)
@@ -144,6 +148,20 @@ func parseUrl(r *http.Request) string {
 	}
 
 	return ""
+}
+
+func readFileAsJson(filename string) string {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "''"
+	}
+
+	json, err := json.Marshal(string(data))
+	if err != nil {
+		return "''"
+	}
+
+	return string(json)
 }
 
 func writeJs(w http.ResponseWriter, r *http.Request, js string) {

@@ -5,8 +5,18 @@ if (typeof jQuery === 'function') {
 		var shorten = {shorten};
 		var now = '{now}';
 		var css = '{css}';
+		var svgs = {
+			'Facebook': {facebooksvg},			
+			'Twitter': {twittersvg},
+			'Google': {googlesvg},
+		};
 		var counts = {counts};
 		var services = ['Facebook', 'Twitter', 'Google'];
+
+		var supportsSvg = function() {
+			// http://stackoverflow.com/questions/654112/how-do-you-detect-support-for-vml-or-svg-in-a-browser
+			return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Shape", "1.0")
+		};
 
 		var $div = $('<div />')
 			.addClass('socialcounters');
@@ -41,10 +51,19 @@ if (typeof jQuery === 'function') {
 				.attr('target', '_blank')
 				.attr('onclick', 'javascript:window.open(this.href,"","menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=300,width=600");return false;');
 
-			var $img = $('<span >')
-				.addClass('sc-data-url')
-				.text(service)
-				.appendTo($service);
+			var $img;
+			if (supportsSvg()
+				&& typeof svgs[service] !== 'undefined'
+				&& !!svgs[service]
+			) {
+				$img = $(svgs[service])
+					.attr('class', 'sc-logo sc-svg');
+			} else {
+				$img = $('<span >')
+					.addClass('sc-logo')
+					.addClass('sc-data-url')
+					.text(service);
+			}
 
 			var count = counts[service];
 			if (shorten) {
@@ -60,9 +79,10 @@ if (typeof jQuery === 'function') {
 			}
 			var $count = $('<span />')
 				.addClass('sc-count')
-				.text(count)
-				.appendTo($service)
+				.text(count);
 
+			$img.appendTo($service);
+			$count.appendTo($service);
 			$service.appendTo($div);
 		}
 

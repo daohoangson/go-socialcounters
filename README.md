@@ -43,16 +43,13 @@ Finally, call `socialcounters()` on the jQuery object to get counters data from 
 
 <div id="target" class="socialcounters">
   <a class="sc-service sc-facebook" rel="facebook-link">
-    <span class="sc-data-url">Facebook</span>
-    <span class="sc-count" rel="facebook-count">0</span>
+    <span class="sc-logo sc-data-url">Facebook</span><span class="sc-count" rel="facebook-count">0</span>
   </a>
   <a class="sc-service sc-twitter" rel="twitter-link">
-    <span class="sc-data-url">Twitter</span>
-    <span class="sc-count" rel="twitter-count">0</span>
+    <span class="sc-logo sc-data-url">Twitter</span><span class="sc-count" rel="twitter-count">0</span>
   </a>
   <a class="sc-service sc-google" rel="google-link">
-    <span class="sc-data-url">Google</span>
-    <span class="sc-count" rel="google-count">0</span>
+    <span class="sc-logo sc-data-url">Google</span><span class="sc-count" rel="google-count">0</span>
   </a>
 </div>
 

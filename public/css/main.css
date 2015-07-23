@@ -33,30 +33,43 @@
 }
 
 /* logos */
+.sc-service .sc-logo {
+	border-right: 1px solid transparent;
+	display: inline-block;
+	height: 20px;
+	vertical-align: top;
+	width: 20px;
+}
+
+.sc-service.sc-facebook .sc-logo {
+	border-right-color: #3b579d;
+}
+
+.sc-service.sc-twitter .sc-logo {
+	border-right-color: #55acee;
+}
+
+.sc-service.sc-google .sc-logo {
+	border-right-color: #dc4b39;
+}
+
 .sc-service .sc-data-url {
 	background-repeat: no-repeat;
 	background-size: cover;
-	border-right: 1px solid transparent;
 	color: transparent;
-	display: inline-block;
-	height: 20px;
 	line-height: 20px;
-	width: 20px;
 }
 
 .sc-service.sc-facebook .sc-data-url {
 	background-image: url("../img/facebook.png");
-	border-right-color: #3b579d;
 }
 
 .sc-service.sc-twitter .sc-data-url {
 	background-image: url("../img/twitter.png");
-	border-right-color: #55acee;
 }
 
 .sc-service.sc-google .sc-data-url {
 	background-image: url("../img/google.png");
-	border-right-color: #dc4b39;
 }
 
 /* counts */
@@ -66,9 +79,18 @@
 	margin: 0 5px;
 	min-width: 20px;
 	text-align: center;
+	vertical-align: top;
 }
 
 /* hover effects */
+.sc-service:hover .sc-logo {
+	border-right-color: #fff;
+}
+.sc-service:hover .sc-svg > g,
+.sc-service:hover .sc-svg > path {
+	fill: #fff;
+}
+
 .sc-service.sc-facebook:hover {
 	background-color: #3b579d;
 	border-color: #fff;
@@ -76,7 +98,6 @@
 }
 .sc-service.sc-facebook:hover .sc-data-url {
 	background-image: url("../img/facebook-white.png");
-	border-right-color: #fff;
 }
 
 .sc-service.sc-twitter:hover {
@@ -86,7 +107,6 @@
 }
 .sc-service.sc-twitter:hover .sc-data-url {
 	background-image: url("../img/twitter-white.png");
-	border-right-color: #fff;
 }
 
 .sc-service.sc-google:hover {
@@ -96,5 +116,4 @@
 }
 .sc-service.sc-google:hover .sc-data-url {
 	background-image: url("../img/google-white.png");
-	border-right-color: #fff;
 }
