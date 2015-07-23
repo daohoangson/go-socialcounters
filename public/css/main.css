@@ -54,22 +54,22 @@
 	border-right-color: #dc4b39;
 }
 
-.sc-service .sc-data-url {
+.sc-service span.sc-logo {
 	background-repeat: no-repeat;
 	background-size: cover;
 	color: transparent;
 	line-height: 20px;
 }
 
-.sc-service.sc-facebook .sc-data-url {
+.sc-service.sc-facebook span.sc-logo {
 	background-image: url("../img/facebook.png");
 }
 
-.sc-service.sc-twitter .sc-data-url {
+.sc-service.sc-twitter span.sc-logo {
 	background-image: url("../img/twitter.png");
 }
 
-.sc-service.sc-google .sc-data-url {
+.sc-service.sc-google span.sc-logo {
 	background-image: url("../img/google.png");
 }
 
@@ -104,7 +104,7 @@
 	border-color: #fff;
 	color: #fff;
 }
-.sc-service.sc-facebook:hover .sc-data-url {
+.sc-service.sc-facebook:hover span.sc-logo {
 	background-image: url("../img/facebook-white.png");
 }
 
@@ -113,7 +113,7 @@
 	border-color: #fff;
 	color: #fff;
 }
-.sc-service.sc-twitter:hover .sc-data-url {
+.sc-service.sc-twitter:hover span.sc-logo {
 	background-image: url("../img/twitter-white.png");
 }
 
@@ -122,6 +122,6 @@
 	border-color: #fff;
 	color: #fff;
 }
-.sc-service.sc-google:hover .sc-data-url {
+.sc-service.sc-google:hover span.sc-logo {
 	background-image: url("../img/google-white.png");
 }

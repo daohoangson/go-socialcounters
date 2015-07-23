@@ -80,7 +80,6 @@ if (typeof jQuery === 'function') {
 			} else {
 				$img = $('<span >')
 					.addClass('sc-logo')
-					.addClass('sc-data-url')
 					.text(service);
 			}
 
