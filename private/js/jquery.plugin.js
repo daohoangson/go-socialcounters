@@ -34,6 +34,25 @@ if (typeof jQuery === 'function') {
 			return;
 		}
 
+		var formatCount = function(count) {
+			var unit = '';
+
+			if (options.shorten) {
+				if (count >= 1000000) {
+					count = (Math.round(count / 1000000.0 * 10) / 10);
+					unit = 'm';
+				} else if (count >= 1000) {
+					count = (Math.round(count / 1000.0 * 10) / 10);
+					unit = 'k';
+				}
+			}
+			if (typeof count.toLocaleString === 'function') {
+				count = count.toLocaleString();
+			}
+
+			return count + unit;
+		};
+
 		var self = this;
 		var callback = 'socialcounters_' + options.url.replace(/[^0-9a-z_]/gi, '');
 		window[callback] = function(counts) {
@@ -55,20 +74,7 @@ if (typeof jQuery === 'function') {
 
 				if (!!mapping.count) {
 					var $count = self.find('[rel=' + mapping.count + ']');
-					var count = counts[service];
-
-					if (options.shorten) {
-						if (count >= 1000000) {
-							count = (Math.round(count / 1000000.0 * 10) / 10) + 'm';
-						} else if (count >= 1000) {
-							count = (Math.round(count / 1000.0 * 10) / 10) + 'k';
-						}
-					} else {
-						if (typeof count.toLocaleString === 'function') {
-							count = count.toLocaleString();
-						}
-					}
-					$count.text(count);
+					$count.text(formatCount(counts[service]));
 				}
 			}
 

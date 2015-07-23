@@ -18,6 +18,25 @@ if (typeof jQuery === 'function') {
 			return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Shape", "1.0")
 		};
 
+		var formatCount = function(count) {
+			var unit = '';
+
+			if (shorten) {
+				if (count >= 1000000) {
+					count = (Math.round(count / 1000000.0 * 10) / 10);
+					unit = 'm';
+				} else if (count >= 1000) {
+					count = (Math.round(count / 1000.0 * 10) / 10);
+					unit = 'k';
+				}
+			}
+			if (typeof count.toLocaleString === 'function') {
+				count = count.toLocaleString();
+			}
+
+			return count + unit;
+		}
+
 		var $div = $('<div />')
 			.addClass('socialcounters');
 
@@ -65,21 +84,9 @@ if (typeof jQuery === 'function') {
 					.text(service);
 			}
 
-			var count = counts[service];
-			if (shorten) {
-				if (count >= 1000000) {
-					count = (Math.round(count / 1000000.0 * 10) / 10) + 'm';
-				} else if (count >= 1000) {
-					count = (Math.round(count / 1000.0 * 10) / 10) + 'k';
-				}
-			} else {
-				if (typeof count.toLocaleString === 'function') {
-					count = count.toLocaleString();
-				}
-			}
 			var $count = $('<span />')
 				.addClass('sc-count')
-				.text(count);
+				.text(formatCount(counts[service]));
 
 			$img.appendTo($service);
 			$count.appendTo($service);
