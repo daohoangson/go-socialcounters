@@ -11,6 +11,7 @@
 	border: 1px solid transparent;
 	display: inline-block;
 	margin-left: 5px;
+	vertical-align: top;
 }
 
 .sc-service:first-child {
@@ -73,6 +74,13 @@
 }
 
 /* counts */
+.sc-total-count {
+	display: inline-block;
+	font-size: 1.5em;
+	font-weight: bold;
+	vertical-align: top;
+}
+
 .sc-service .sc-count {
 	display: inline-block;
 	line-height: 20px;

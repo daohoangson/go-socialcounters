@@ -5,6 +5,9 @@ if (typeof jQuery === 'function') {
 			shorten: false,
 			callback: null,
 			mapping: {
+				Total: {
+					count: 'total-count'
+				},
 				Facebook: {
 					link: 'facebook-link',
 					count: 'facebook-count'
@@ -75,6 +78,19 @@ if (typeof jQuery === 'function') {
 				if (!!mapping.count) {
 					var $count = self.find('[rel=' + mapping.count + ']');
 					$count.text(formatCount(counts[service]));
+				}
+			}
+
+			if (!!options.mapping.Total.count) {
+				var $totalCount = self.find('[rel=' + options.mapping.Total.count + ']')
+
+				if ($totalCount.length > 0) {
+					var totalCount = 0;
+					for (var service in counts) {
+						totalCount += counts[service];
+					}
+
+					$totalCount.text(formatCount(totalCount));
 				}
 			}
 

@@ -42,6 +42,8 @@ Finally, call `socialcounters()` on the jQuery object to get counters data from 
 ...
 
 <div id="target" class="socialcounters">
+  <span class="sc-total-count" rel="total-count">0</span>
+
   <a class="sc-service sc-facebook" rel="facebook-link">
     <span class="sc-logo sc-data-url">Facebook</span><span class="sc-count" rel="facebook-count">0</span>
   </a>
@@ -73,6 +75,7 @@ It is required to mark your elements with `rel="something"` for the plugin to fi
 
  * Links: `facebook-link`, `twitter-link`, `google-link`
  * Counts: `facebook-count`, `twitter-count`, `google-count`
+ * Total (sum of all counts): `total-count`
 
 ## Deploy
 
