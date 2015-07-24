@@ -99,9 +99,13 @@ if (typeof jQuery === 'function') {
 			$div.appendTo($('body'));
 		}
 
-		$('<style />')
-			.text(css)
-			.appendTo($('head'));
+		var $head = $('head');
+		if ($head.children('style.sc-css').length == 0) {
+			$('<style />')
+				.addClass('sc-css')
+				.text(css)
+				.appendTo($head);
+		}
 
 	})(jQuery);
 }
