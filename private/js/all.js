@@ -1,6 +1,7 @@
 if (typeof jQuery === 'function') {
 	(function($){
 		var url = {url};
+		var ads = {ads};
 		var target = {target};
 		var shorten = {shorten};
 		var now = '{now}';
@@ -35,6 +36,11 @@ if (typeof jQuery === 'function') {
 			}
 
 			return count + unit;
+		}
+
+		if (!url) {
+			// no url?! This should not happen...
+			return;
 		}
 
 		var $div = $('<div />')
@@ -85,11 +91,21 @@ if (typeof jQuery === 'function') {
 
 			var $count = $('<span />')
 				.addClass('sc-count')
+				.attr('count', counts[service])
 				.text(formatCount(counts[service]));
 
 			$img.appendTo($service);
 			$count.appendTo($service);
 			$service.appendTo($div);
+		}
+
+		if ($div.children().length == 0) {
+			// no services have been rendered, bye
+			return;
+		}
+
+		if (!!ads) {
+			$(ads).appendTo($div);
 		}
 
 		var $container = $(target);

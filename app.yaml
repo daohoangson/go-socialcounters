@@ -4,6 +4,7 @@ runtime: go
 api_version: go1
 
 env_variables:
+  ADS: ''
   WHITELIST: ''
   BLACKLIST: ''
 

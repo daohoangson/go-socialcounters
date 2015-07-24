@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	js = strings.Replace(js, "{twittersvg}", readFileAsJson("private/img/twitter.svg"), 1)
 	js = strings.Replace(js, "{googlesvg}", readFileAsJson("private/img/google.svg"), 1)
 
+	js = strings.Replace(js, "{ads}", getAdsAsJson(), 1)
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
 	js = strings.Replace(js, "{shorten}", parseShortenAsBool(r), 1)
 	js = strings.Replace(js, "{target}", parseTargetAsJson(r), 1)
@@ -76,8 +78,18 @@ func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 
 	jsonUrl := fmt.Sprintf("//%s/js/data.json", r.Host)
 	js := strings.Replace(string(jsData), "{jsonUrl}", jsonUrl, 1)
+	js = strings.Replace(js, "{ads}", getAdsAsJson(), 1)
 
 	writeJs(w, r, js)
+}
+
+func getAdsAsJson() string {
+	json, err := json.Marshal(os.Getenv("ADS"))
+	if err != nil {
+		return "''"
+	}
+
+	return string(json)
 }
 
 func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {

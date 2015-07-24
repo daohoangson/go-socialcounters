@@ -37,6 +37,7 @@ if (typeof jQuery === 'function') {
 			return;
 		}
 
+		var ads = {ads};
 		var formatCount = function(count) {
 			var unit = '';
 
@@ -77,7 +78,9 @@ if (typeof jQuery === 'function') {
 
 				if (!!mapping.count) {
 					var $count = self.find('[rel=' + mapping.count + ']');
-					$count.text(formatCount(counts[service]));
+					$count
+						.attr('count', counts[service])
+						.text(formatCount(counts[service]));
 				}
 			}
 
@@ -90,7 +93,15 @@ if (typeof jQuery === 'function') {
 						totalCount += counts[service];
 					}
 
-					$totalCount.text(formatCount(totalCount));
+					$totalCount
+						.attr('count', totalCount)
+						.text(formatCount(totalCount));
+				}
+			}
+
+			if (!!ads) {
+				if (self.find('.sc-ads').length === 0) {
+					$(ads).appendTo(self);
 				}
 			}
 

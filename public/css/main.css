@@ -125,3 +125,14 @@
 .sc-service.sc-google:hover span.sc-logo {
 	background-image: url("../img/google-white.png");
 }
+
+/* ads */
+.sc-ads {
+	line-height: 22px;
+	margin-left: 5px;
+	opacity: 0;
+}
+
+.socialcounters:hover .sc-ads {
+	opacity: 1.0;
+}
