@@ -1,13 +1,11 @@
-package main
+package services
 
 import (
 	"net/http"
 	"testing"
-
-	"github.com/daohoangson/go-socialcounters/services"
 )
 
-func testOk(t *testing.T, f services.ServiceFunc, url string, expectedService string, expectedCount int64) {
+func testOk(t *testing.T, f ServiceFunc, url string, expectedService string, expectedCount int64) {
 	client := new(http.Client)
 	serviceResult := f(client, url)
 
@@ -27,7 +25,7 @@ func testOk(t *testing.T, f services.ServiceFunc, url string, expectedService st
 		url, serviceResult.Count, serviceResult.Response)
 }
 
-func testFacebook(t *testing.T, f services.ServiceFunc) {
+func testFacebook(t *testing.T, f ServiceFunc) {
 	url := "https://facebook.com"
 	expectedService := "Facebook"
 	expectedCount := int64(100000000)
@@ -35,10 +33,14 @@ func testFacebook(t *testing.T, f services.ServiceFunc) {
 }
 
 func TestFacebook(t *testing.T) {
-	testFacebook(t, services.FacebookDirect)
-	testFacebook(t, services.FacebookCrossOrigin)
+	testFacebook(t, FacebookDirect)
+	testFacebook(t, FacebookCrossOrigin)
 }
 
 func TestGoogle(t *testing.T) {
-	testOk(t, services.Google, "https://google.com", "Google", int64(10000000))
+	testOk(t, Google, "https://google.com", "Google", int64(10000000))
+}
+
+func TestTwitter(t *testing.T) {
+	testOk(t, Twitter, "https://twitter.com", "Twitter", int64(97000))
 }
