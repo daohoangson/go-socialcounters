@@ -22,7 +22,7 @@ func OtherNew(r *http.Request) Utils {
 }
 
 var serviceFuncs = []services.ServiceFunc{
-	services.Facebook2,
+	services.FacebookDirect,
 	services.Twitter,
 	services.Google,
 }
