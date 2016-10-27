@@ -7,7 +7,7 @@ import (
 )
 
 type Utils interface {
-	ServiceFuncs() []services.ServiceFunc
+	ServiceFunc(service string) services.ServiceFunc
 
 	HttpClient() *http.Client
 

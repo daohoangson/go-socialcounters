@@ -21,14 +21,17 @@ func OtherNew(r *http.Request) Utils {
 	return utils
 }
 
-var serviceFuncs = []services.ServiceFunc{
-	services.FacebookDirect,
-	services.Twitter,
-	services.Google,
-}
+func (u Other) ServiceFunc(service string) services.ServiceFunc {
+	switch service {
+	case "Facebook":
+		return services.FacebookDirect
+	case "Twitter":
+		return services.Twitter
+	case "Google":
+		return services.Google
+	}
 
-func (u Other) ServiceFuncs() []services.ServiceFunc {
-	return serviceFuncs
+	return nil
 }
 
 func (u Other) HttpClient() *http.Client {

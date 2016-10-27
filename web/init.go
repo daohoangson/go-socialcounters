@@ -19,6 +19,7 @@ func HttpInit(utilsFunc utils.UtilsFunc) {
 	http.HandleFunc("/", httpRedirect)
 	http.HandleFunc("/js/all.js", httpAllJs)
 	http.HandleFunc("/js/data.json", httpDataJson)
+	http.HandleFunc("/v2/js/data.json", httpDataJson2)
 	http.HandleFunc("/js/jquery.plugin.js", httpJqueryPluginJs)
 }
 
@@ -57,7 +58,12 @@ func httpAllJs(w http.ResponseWriter, r *http.Request) {
 
 func httpDataJson(w http.ResponseWriter, r *http.Request) {
 	u := uf(w, r)
-	DataJson(u, w, r)
+	DataJson(u, w, r, true)
+}
+
+func httpDataJson2(w http.ResponseWriter, r *http.Request) {
+	u := uf(w, r)
+	DataJson(u, w, r, false)
 }
 
 func httpJqueryPluginJs(w http.ResponseWriter, r *http.Request) {

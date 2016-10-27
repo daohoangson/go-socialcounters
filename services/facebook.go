@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +14,7 @@ import neturl "net/url"
 func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Facebook"
+	result.Url = url
 	
 	fbGraphUrl := fmt.Sprintf("%s?ids=%s", fbGraphRoot, neturl.QueryEscape(url))
 	resp, err := client.Get(fbGraphUrl)
@@ -39,12 +41,15 @@ func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult
 
 	matches := r.FindStringSubmatch(json)
 	if matches == nil {
+		result.Error = errors.New("`share_count` not found")
 		return result
 	}
 
 	count, err := strconv.ParseInt(matches[1], 10, 64)
 	if err == nil {
 		result.Count = count
+	} else {
+		result.Error = err
 	}
 
 	return result

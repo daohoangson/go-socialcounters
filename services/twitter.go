@@ -16,6 +16,7 @@ type twitterResponse struct {
 func Twitter(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Twitter"
+	result.Url = url
 
 	resp, err := client.Get("https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url))
 	if err != nil {

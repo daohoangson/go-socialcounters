@@ -4,21 +4,25 @@ import (
 	"net/http"
 )
 
-func Batch(client *http.Client, serviceFuncs []ServiceFunc, url string) []ServiceResult {
-	ch := make(chan ServiceResult, 3)
+func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
 	results := []ServiceResult{}
+	if len(requests) < 1 {
+		return results
+	}
 
-	for _, serviceFunc := range serviceFuncs {
+	ch := make(chan ServiceResult, len(requests))
+
+	for _, request := range requests {
 		go func(serviceFunc ServiceFunc, url string) {
 			ch <- serviceFunc(client, url)
-		}(serviceFunc, url)
+		}(request.Func, request.Url)
 	}
 
 	for {
 		select {
 		case r := <-ch:
 			results = append(results, r)
-			if len(results) == len(serviceFuncs) {
+			if len(results) == len(requests) {
 				return results
 			}
 		}
@@ -27,8 +31,14 @@ func Batch(client *http.Client, serviceFuncs []ServiceFunc, url string) []Servic
 	return results
 }
 
+type ServiceRequest struct {
+	Func ServiceFunc
+	Url  string
+}
+
 type ServiceResult struct {
 	Service  string
+	Url      string
 	Count    int64
 	Error    error
 	Response string

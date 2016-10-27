@@ -12,6 +12,7 @@ import (
 func Google(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Google"
+	result.Url = url
 
 	urlJson, err := json.Marshal(url)
 	if err != nil {

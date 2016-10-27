@@ -10,7 +10,7 @@ func testOk(t *testing.T, f ServiceFunc, url string, expectedService string, exp
 	serviceResult := f(client, url)
 
 	if serviceResult.Error != nil {
-		t.Fatalf("Unexpected `Error` (%s)", serviceResult.Error)
+		t.Fatalf("Unexpected `Error` (%s), Response=%s", serviceResult.Error, serviceResult.Response)
 	}
 
 	if serviceResult.Service != expectedService {

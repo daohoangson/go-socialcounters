@@ -16,7 +16,7 @@ import (
 )
 
 func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
-	url, countsJson, err := getCountsJson(u, r)
+	url, countsJson, err := getCountsJson(u, r, true)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.Errorf("web.AllJs: getCountsJson error %v", err)
@@ -57,8 +57,8 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	writeJs(w, r, js)
 }
 
-func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
-	_, countsJson, err := getCountsJson(u, r)
+func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request, oneUrl bool) {
+	_, countsJson, err := getCountsJson(u, r, oneUrl)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.Errorf("web.DataJson: getCountsJson error %v", err)
@@ -92,27 +92,67 @@ func getAdsAsJson() string {
 	return string(json)
 }
 
-func getCountsJson(u utils.Utils, r *http.Request) (string, string, error) {
-	url := parseUrl(r)
-	if !RulesAllowUrl(u, url) {
-		return url, "{}", nil
+func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string, error) {
+	requestedUrls := parseUrls(r)
+	if len(requestedUrls) < 1 {
+		return "", "{}", nil
 	}
 
-	if value, err := u.MemoryGet(url); err == nil {
-		return url, string(value), nil
+	url := ""
+	if oneUrl {
+		url = requestedUrls[0]
+		requestedUrls = []string{url}
 	}
 
-	serviceResults := services.Batch(u.HttpClient(), u.ServiceFuncs(), url)
-	dataMap := make(map[string]int64)
-	for _, serviceResult := range serviceResults {
-		dataMap[serviceResult.Service] = serviceResult.Count
+	requestedServices := parseServices(r)
+	ttl := parseTtl(r)
+	dataMap := make(map[string]map[string]int64)
+	requests := []services.ServiceRequest{}
+
+	for _, requestedUrl := range requestedUrls {
+		if !RulesAllowUrl(u, requestedUrl) {
+			continue
+		}
+
+		dataMap[requestedUrl] = make(map[string]int64)
+
+		for _, requestedService := range requestedServices {
+			if value, err := u.MemoryGet(getCacheKey(requestedService, requestedUrl)); err == nil {
+				if count, err := strconv.ParseInt(string(value), 10, 64); err == nil {
+					dataMap[requestedUrl][requestedService] = count
+				}
+			}
+
+			if _, ok := dataMap[requestedUrl][requestedService]; !ok {
+				if serviceFunc := u.ServiceFunc(requestedService); serviceFunc != nil {
+					var request services.ServiceRequest
+					request.Func = serviceFunc
+					request.Url = requestedUrl
+
+					requests = append(requests, request)
+				}
+			}
+		}
 	}
 
-	dataByte, err := json.Marshal(dataMap)
-	if err != nil {
-		return url, "{}", err
+	if len(requests) > 0 {
+		serviceResults := services.Batch(u.HttpClient(), requests)
+
+		for _, serviceResult := range serviceResults {
+			dataMap[serviceResult.Url][serviceResult.Service] = serviceResult.Count
+			u.MemorySet(getCacheKeyForResult(serviceResult), []byte(fmt.Sprintf("%d", serviceResult.Count)), ttl)
+		}
+	}
+
+	var dataByte []byte
+	var dataErr error
+	if oneUrl {
+		dataByte, dataErr = json.Marshal(dataMap[url])
 	} else {
-		u.MemorySet(url, dataByte, parseTtl(r))
+		dataByte, dataErr = json.Marshal(dataMap)
+	}
+	if dataErr != nil {
+		return url, "{}", dataErr
 	}
 
 	return url, string(dataByte), nil
@@ -153,13 +193,36 @@ func parseTtl(r *http.Request) int64 {
 	return 300
 }
 
-func parseUrl(r *http.Request) string {
+func parseUrls(r *http.Request) []string {
+	urls := []string{}
+
 	q := r.URL.Query()
-	if urls, ok := q["url"]; ok {
-		return urls[0]
+	if queryUrls, ok := q["url"]; ok {
+		for _, queryUrl := range queryUrls {
+			if len(queryUrl) > 0 {
+				urls = append(urls, queryUrl)
+			}
+		}
 	}
 
-	return ""
+	return urls
+}
+
+func parseServices(r *http.Request) []string {
+	q := r.URL.Query()
+	if services, ok := q["services"]; ok {
+		return services
+	}
+
+	return []string{"Facebook", "Twitter", "Google"}
+}
+
+func getCacheKey(service string, url string) string {
+	return fmt.Sprintf("%s/%s", service, url)
+}
+
+func getCacheKeyForResult(result services.ServiceResult) string{
+	return getCacheKey(result.Service, result.Url)
 }
 
 func readFileAsJson(filename string) string {
