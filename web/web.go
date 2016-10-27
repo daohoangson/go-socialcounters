@@ -36,7 +36,7 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 		u.Errorf("web.AllJs: ReadFile error %v", err)
 		return
 	}
-	js := MinifyJs(string(jsData))
+	js := string(jsData)
 	js = strings.Replace(js, "{url}", string(urlByte), 1)
 	js = strings.Replace(js, "{now}", fmt.Sprintf("%v", time.Now()), 1)
 
@@ -242,7 +242,7 @@ func readFileAsJson(filename string) string {
 func writeJs(w http.ResponseWriter, r *http.Request, js string) {
 	w.Header().Set("Content-Type", "application/javascript")
 	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
-	fmt.Fprintf(w, js)
+	fmt.Fprintf(w, MinifyJs(js))
 }
 
 func writeJson(w http.ResponseWriter, r *http.Request, json string) {
@@ -258,6 +258,6 @@ func writeJson(w http.ResponseWriter, r *http.Request, json string) {
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
-		fmt.Fprintf(w, json)
+		fmt.Fprintf(w, MinifyJs(json))
 	}
 }

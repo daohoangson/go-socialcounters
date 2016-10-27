@@ -43,12 +43,56 @@ func EqualFold(s, targetLower []byte) bool {
 	return true
 }
 
-// IsWhitespace returns true for space, \n, \t, \f, \r.
-func IsWhitespace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
+var whitespaceTable = [256]bool{
+	// ASCII
+	false, false, false, false, false, false, false, false,
+	false, true, true, false, true, true, false, false, // tab, new line, form feed, carriage return
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	true, false, false, false, false, false, false, false, // space
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	// non-ASCII
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
+	false, false, false, false, false, false, false, false,
 }
 
-// IsAllWhitespace returns true when the entire byte slice consists of space, \n, \t, \f, \r.
+// IsWhitespace returns true for space, \n, \r, \t, \f.
+func IsWhitespace(c byte) bool {
+	return whitespaceTable[c]
+}
+
+// IsAllWhitespace returns true when the entire byte slice consists of space, \n, \r, \t, \f.
 func IsAllWhitespace(b []byte) bool {
 	for _, c := range b {
 		if !IsWhitespace(c) {
@@ -58,19 +102,19 @@ func IsAllWhitespace(b []byte) bool {
 	return true
 }
 
-// Trim removes any character from the start and end for which the function returns true.
-func Trim(b []byte, f func(byte) bool) []byte {
+// TrimWhitespace removes any leading and trailing whitespace characters.
+func TrimWhitespace(b []byte) []byte {
 	n := len(b)
 	start := n
 	for i := 0; i < n; i++ {
-		if !f(b[i]) {
+		if !IsWhitespace(b[i]) {
 			start = i
 			break
 		}
 	}
 	end := n
 	for i := n - 1; i >= start; i-- {
-		if !f(b[i]) {
+		if !IsWhitespace(b[i]) {
 			end = i + 1
 			break
 		}
@@ -78,33 +122,39 @@ func Trim(b []byte, f func(byte) bool) []byte {
 	return b[start:end]
 }
 
-// ReplaceMultiple replaces any character serie for which the function return true into a single character given by r.
-func ReplaceMultiple(b []byte, f func(byte) bool, r byte) []byte {
+// ReplaceMultipleWhitespace replaces character series of space, \n, \t, \f, \r into a single space or newline (when the serie contained a \n or \r).
+func ReplaceMultipleWhitespace(b []byte) []byte {
 	j := 0
-	start := 0
-	prevMatch := false
+	prevWS := false
+	hasNewline := false
 	for i, c := range b {
-		if f(c) {
-			if !prevMatch {
-				prevMatch = true
-				b[i] = r
-			} else {
-				if start < i {
-					if start != 0 {
-						j += copy(b[j:], b[start:i])
-					} else {
-						j += i
-					}
-				}
-				start = i + 1
+		if IsWhitespace(c) {
+			prevWS = true
+			if c == '\n' || c == '\r' {
+				hasNewline = true
 			}
 		} else {
-			prevMatch = false
+			if prevWS {
+				prevWS = false
+				if hasNewline {
+					hasNewline = false
+					b[j] = '\n'
+				} else {
+					b[j] = ' '
+				}
+				j++
+			}
+			b[j] = b[i]
+			j++
 		}
 	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
+	if prevWS {
+		if hasNewline {
+			b[j] = '\n'
+		} else {
+			b[j] = ' '
+		}
+		j++
 	}
-	return b
+	return b[:j]
 }

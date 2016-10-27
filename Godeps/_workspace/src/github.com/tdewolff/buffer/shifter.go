@@ -1,15 +1,6 @@
-/*
-Package buffer contains buffer and wrapper types for byte slices. It is useful for writing lexers or other high-performance byte slice handling.
-
-The `Reader` and `Writer` types implement the `io.Reader` and `io.Writer` respectively and provide a thinner and faster interface than `bytes.Buffer`.
-The `Shifter` type is useful for building lexers because it keeps track of the start and end position of a byte selection, and shifts the bytes whenever a valid token is found.
-*/
 package buffer
 
 import "io"
-
-// MinBuf specified the initial length of the internal shifter buffer.
-var MinBuf = 4096
 
 // Shifter is a buffered reader that allows peeking forward and shifting, taking an io.Reader.
 type Shifter struct {
@@ -22,8 +13,15 @@ type Shifter struct {
 	end int
 }
 
-// NewShifter returns a new Shifter for a given io.Reader.
+// NewShifter returns a new Shifter for a given io.Reader with a 4kB estimated buffer size.
+// If the io.Reader implements Bytes, that buffer is used instead.
 func NewShifter(r io.Reader) *Shifter {
+	return NewShifterSize(r, defaultBufSize)
+}
+
+// NewShifterSize returns a new Shifter for a given io.Reader and estimated required buffer size.
+// If the io.Reader implements Bytes, that buffer is used instead.
+func NewShifterSize(r io.Reader, size int) *Shifter {
 	// If reader has the bytes in memory already, use that instead!
 	if buffer, ok := r.(interface {
 		Bytes() []byte
@@ -36,7 +34,7 @@ func NewShifter(r io.Reader) *Shifter {
 	}
 	z := &Shifter{
 		r:   r,
-		buf: make([]byte, 0, MinBuf),
+		buf: make([]byte, 0, size),
 	}
 	z.Peek(0)
 	return z
@@ -50,42 +48,51 @@ func (z *Shifter) Err() error {
 	return z.err
 }
 
-// IsEOF returns true when it has encountered EOF. When true it has loaded the last data in memory (ie. it will not be overwritten).
+// IsEOF returns true when it has encountered EOF meaning that it has loaded the last data in memory (ie. previously returned byte slice will not be overwritten by Peek).
 // Calling IsEOF is faster than checking Err() == io.EOF.
 func (z *Shifter) IsEOF() bool {
 	return z.eof
 }
 
+func (z *Shifter) read(end int) byte {
+	if z.err != nil {
+		return 0
+	}
+
+	// reallocate a new buffer (possibly larger)
+	c := cap(z.buf)
+	d := len(z.buf) - z.pos
+	var buf []byte
+	if 2*d > c {
+		buf = make([]byte, d, 2*c+end-z.pos)
+	} else {
+		buf = z.buf[:d]
+	}
+	copy(buf, z.buf[z.pos:])
+
+	// read in to fill the buffer till capacity
+	var n int
+	n, z.err = z.r.Read(buf[d:cap(buf)])
+	z.eof = (z.err == io.EOF)
+	end -= z.pos
+	z.end -= z.pos
+	z.pos, z.buf = 0, buf[:d+n]
+	if n == 0 {
+		if z.err == nil {
+			z.err = io.EOF
+			z.eof = true
+		}
+		return 0
+	}
+	return z.buf[end]
+}
+
 // Peek returns the ith byte relative to the end position and possibly does an allocation. Calling Peek may invalidate previous returned byte slices by Bytes or Shift, unless IsEOF returns true.
-// Peek returns zero when an error has occurred, Err return the error.
-func (z *Shifter) Peek(i int) byte {
-	end := z.end + i
+// Peek returns zero when an error has occurred, Err returns the error.
+func (z *Shifter) Peek(end int) byte {
+	end += z.end
 	if end >= len(z.buf) {
-		if z.err != nil {
-			return 0
-		}
-
-		// reallocate a new buffer (possibly larger)
-		c := cap(z.buf)
-		d := len(z.buf) - z.pos
-		var buf []byte
-		if 2*d > c {
-			buf = make([]byte, d, 2*c+end-z.pos)
-		} else {
-			buf = z.buf[:d]
-		}
-		copy(buf, z.buf[z.pos:])
-
-		// read in to fill the buffer till capacity
-		var n int
-		n, z.err = z.r.Read(buf[d:cap(buf)])
-		z.eof = (z.err == io.EOF)
-		end -= z.pos
-		z.end -= z.pos
-		z.pos, z.buf = 0, buf[:d+n]
-		if n == 0 {
-			return 0
-		}
+		return z.read(end)
 	}
 	return z.buf[end]
 }
@@ -100,9 +107,8 @@ func (z *Shifter) PeekRune(i int) (rune, int) {
 		return rune(c&0x1F)<<6 | rune(z.Peek(i+1)&0x3F), 2
 	} else if c < 0xF0 {
 		return rune(c&0x0F)<<12 | rune(z.Peek(i+1)&0x3F)<<6 | rune(z.Peek(i+2)&0x3F), 3
-	} else {
-		return rune(c&0x07)<<18 | rune(z.Peek(i+1)&0x3F)<<12 | rune(z.Peek(i+2)&0x3F)<<6 | rune(z.Peek(i+3)&0x3F), 4
 	}
+	return rune(c&0x07)<<18 | rune(z.Peek(i+1)&0x3F)<<12 | rune(z.Peek(i+2)&0x3F)<<6 | rune(z.Peek(i+3)&0x3F), 4
 }
 
 // Move advances the end position.

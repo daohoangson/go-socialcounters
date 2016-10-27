@@ -7,7 +7,7 @@ import (
 
 func MinifyJs(js string) string {
 	m := getMinifier()
-	minified, err := minify.String(m, "application/javascript", js)
+	minified, err := m.String("application/javascript", js)
 
 	if err == nil {
 		return minified
@@ -16,9 +16,9 @@ func MinifyJs(js string) string {
 	}
 }
 
-var minifier *minify.Minify
+var minifier *minify.M
 
-func getMinifier() *minify.Minify {
+func getMinifier() *minify.M {
 	if minifier == nil {
 		minifier = minify.New()
 		minifier.AddFunc("application/javascript", js.Minify)

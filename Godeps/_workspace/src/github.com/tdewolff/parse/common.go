@@ -4,11 +4,10 @@ package parse
 import (
 	"encoding/base64"
 	"errors"
-	"math"
 	"net/url"
 )
 
-// Returned by DataURI when the byte slice does not start with 'data:' or is too short.
+// ErrBadDataURI is returned by DataURI when the byte slice does not start with 'data:' or is too short.
 var ErrBadDataURI = errors.New("not a data URI")
 
 // Number returns the number of bytes that parse as a number of the regex format (+|-)?([0-9]+(\.[0-9]+)?|\.[0-9]+)((e|E)(+|-)?[0-9]+)?.
@@ -64,24 +63,84 @@ func Number(b []byte) int {
 	return i
 }
 
-// Int parses a byte-slice and returns the integer it represents
-func Int(b []byte) (int64, bool) {
-	i := int64(0)
-	neg := false
-	for _, c := range b {
-		if c == '-' {
-			neg = true
-		} else if i+1 > math.MaxInt64/10 {
-			return 0, false
-		} else {
-			i *= 10
-			i += int64(c - '0')
+// Dimension parses a byte-slice and returns the length of the number and its unit.
+func Dimension(b []byte) (int, int) {
+	num := Number(b)
+	if num == 0 || num == len(b) {
+		return num, 0
+	} else if b[num] == '%' {
+		return num, 1
+	} else if b[num] >= 'a' && b[num] <= 'z' || b[num] >= 'A' && b[num] <= 'Z' {
+		i := num + 1
+		for i < len(b) && (b[i] >= 'a' && b[i] <= 'z' || b[i] >= 'A' && b[i] <= 'Z') {
+			i++
+		}
+		return num, i - num
+	}
+	return num, 0
+}
+
+// Mediatype parses a given mediatype and splits the mimetype from the parameters.
+// It works similar to mime.ParseMediaType but is faster.
+func Mediatype(b []byte) ([]byte, map[string]string) {
+	i := 0
+	for i < len(b) && b[i] == ' ' {
+		i++
+	}
+	b = b[i:]
+	n := len(b)
+	mimetype := b
+	var params map[string]string
+	for i := 3; i < n; i++ { // mimetype is at least three characters long
+		if b[i] == ';' || b[i] == ' ' {
+			mimetype = b[:i]
+			if b[i] == ' ' {
+				i++
+				for i < n && b[i] == ' ' {
+					i++
+				}
+				if i < n && b[i] != ';' {
+					break
+				}
+			}
+			params = map[string]string{}
+			s := string(b)
+		PARAM:
+			i++
+			for i < n && s[i] == ' ' {
+				i++
+			}
+			start := i
+			for i < n && s[i] != '=' && s[i] != ';' && s[i] != ' ' {
+				i++
+			}
+			key := s[start:i]
+			for i < n && s[i] == ' ' {
+				i++
+			}
+			if i < n && s[i] == '=' {
+				i++
+				for i < n && s[i] == ' ' {
+					i++
+				}
+				start = i
+				for i < n && s[i] != ';' && s[i] != ' ' {
+					i++
+				}
+			} else {
+				start = i
+			}
+			params[key] = s[start:i]
+			for i < n && s[i] == ' ' {
+				i++
+			}
+			if i < n && s[i] == ';' {
+				goto PARAM
+			}
+			break
 		}
 	}
-	if neg {
-		return -i, true
-	}
-	return i, true
+	return mimetype, params
 }
 
 // DataURI parses the given data URI and returns the mediatype, data and ok.
@@ -89,21 +148,22 @@ func DataURI(dataURI []byte) ([]byte, []byte, error) {
 	if len(dataURI) > 5 && Equal(dataURI[:5], []byte("data:")) {
 		dataURI = dataURI[5:]
 		inBase64 := false
-		mediatype := []byte{}
+		var mediatype []byte
 		i := 0
-		for j, c := range dataURI {
+		for j := 0; j < len(dataURI); j++ {
+			c := dataURI[j]
 			if c == '=' || c == ';' || c == ',' {
-				if c != '=' && Equal(Trim(dataURI[i:j], IsWhitespace), []byte("base64")) {
+				if c != '=' && Equal(TrimWhitespace(dataURI[i:j]), []byte("base64")) {
 					if len(mediatype) > 0 {
 						mediatype = mediatype[:len(mediatype)-1]
 					}
 					inBase64 = true
 					i = j
 				} else if c != ',' {
-					mediatype = append(append(mediatype, Trim(dataURI[i:j], IsWhitespace)...), c)
+					mediatype = append(append(mediatype, TrimWhitespace(dataURI[i:j])...), c)
 					i = j + 1
 				} else {
-					mediatype = append(mediatype, Trim(dataURI[i:j], IsWhitespace)...)
+					mediatype = append(mediatype, TrimWhitespace(dataURI[i:j])...)
 				}
 				if c == ',' {
 					if len(mediatype) == 0 || mediatype[0] == ';' {
@@ -114,7 +174,7 @@ func DataURI(dataURI []byte) ([]byte, []byte, error) {
 						decoded := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
 						n, err := base64.StdEncoding.Decode(decoded, data)
 						if err != nil {
-							return []byte{}, []byte{}, err
+							return nil, nil, err
 						}
 						data = decoded[:n]
 					} else if unescaped, err := url.QueryUnescape(string(data)); err == nil {
@@ -125,10 +185,10 @@ func DataURI(dataURI []byte) ([]byte, []byte, error) {
 			}
 		}
 	}
-	return []byte{}, []byte{}, ErrBadDataURI
+	return nil, nil, ErrBadDataURI
 }
 
-// QuoteEntity parses the given byte slice and returns the quote that got matched (' or "), its entity length and ok.
+// QuoteEntity parses the given byte slice and returns the quote that got matched (' or ") and its entity length.
 func QuoteEntity(b []byte) (quote byte, n int) {
 	if len(b) < 5 || b[0] != '&' {
 		return 0, 0

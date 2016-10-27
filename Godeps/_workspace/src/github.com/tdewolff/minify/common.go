@@ -3,18 +3,14 @@ package minify
 import (
 	"bytes"
 	"encoding/base64"
-	"math"
 	"net/url"
 
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/strconv"
 )
 
 // Epsilon is the closest number to zero that is not considered to be zero.
 var Epsilon = 0.00001
-
-var (
-	zeroBytes = []byte("0")
-)
 
 // ContentType minifies a given mediatype by removing all whitespace.
 func ContentType(b []byte) []byte {
@@ -41,9 +37,9 @@ func ContentType(b []byte) []byte {
 }
 
 // DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.
-func DataURI(m Minifier, dataURI []byte) []byte {
+func DataURI(m *M, dataURI []byte) []byte {
 	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
-		dataURI, _ = Bytes(m, string(mediatype), data)
+		dataURI, _ = m.Bytes(string(mediatype), data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
 		for _, c := range dataURI {
@@ -65,42 +61,51 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 			dataURI = []byte(url.QueryEscape(string(dataURI)))
 			dataURI = bytes.Replace(dataURI, []byte("\""), []byte("\\\""), -1)
 		}
-		if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
+		if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
 			mediatype = mediatype[len("text/plain"):]
+		}
+		for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
+			// must start with semicolon and be followed by end of mediatype or semicolon
+			if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
+				mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
+				break
+			}
 		}
 		dataURI = append(append(append([]byte("data:"), mediatype...), ','), dataURI...)
 	}
 	return dataURI
 }
 
+const MaxInt = int(^uint(0) >> 1)
+const MinInt = -MaxInt - 1
+
 // Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
-func Number(num []byte) []byte {
+func Number(num []byte, prec int) []byte {
 	// omit first + and register mantissa start and end, whether it's negative and the exponent
 	neg := false
 	start := 0
 	dot := -1
 	end := len(num)
-	exp := int64(0)
-	if 0 < len(num) && (num[0] == '+' || num[0] == '-') {
+	origExp := 0
+	if 0 < end && (num[0] == '+' || num[0] == '-') {
 		if num[0] == '-' {
 			neg = true
-			start++
-		} else {
-			num = num[1:]
-			end--
 		}
+		start++
 	}
-	for i, c := range num {
+	for i, c := range num[start:] {
 		if c == '.' {
-			dot = i
+			dot = start + i
 		} else if c == 'e' || c == 'E' {
-			end = i
-			i++
+			end = start + i
+			i += start + 1
 			if i < len(num) && num[i] == '+' {
 				i++
 			}
-			var ok bool
-			if exp, ok = parse.Int(num[i:]); !ok {
+			if tmpOrigExp, n := strconv.ParseInt(num[i:]); n > 0 && tmpOrigExp >= int64(MinInt) && tmpOrigExp <= int64(MaxInt) {
+				// range checks for when int is 32 bit
+				origExp = int(tmpOrigExp)
+			} else {
 				return num
 			}
 			break
@@ -110,8 +115,8 @@ func Number(num []byte) []byte {
 		dot = end
 	}
 
-	// trim leading zeros
-	for start < end && num[start] == '0' {
+	// trim leading zeros but leave at least one digit
+	for start < end-1 && num[start] == '0' {
 		start++
 	}
 	// trim trailing zeros
@@ -124,80 +129,206 @@ func Number(num []byte) []byte {
 	}
 	if i == dot {
 		end = dot
-	}
-	if start == end {
-		return zeroBytes
+		if start == end {
+			num[start] = '0'
+			return num[start : start+1]
+		}
+	} else if start == end-1 && num[start] == '0' {
+		return num[start:end]
 	}
 
-	// shorten mantissa by increasing/decreasing the exponent
-	if end == dot {
-		for i := end - 1; i >= start; i-- {
+	// n is the number of significant digits
+	// normExp would be the exponent if it were normalised (0.1 <= f < 1)
+	n := 0
+	normExp := 0
+	if dot == start {
+		for i = dot + 1; i < end; i++ {
 			if num[i] != '0' {
-				exp += int64(end - i - 1)
+				n = end - i
+				normExp = dot - i + 1
+				break
+			}
+		}
+	} else if dot == end {
+		normExp = end - start
+		for i = end - 1; i >= start; i-- {
+			if num[i] != '0' {
+				n = i + 1 - start
 				end = i + 1
 				break
 			}
 		}
 	} else {
-		exp -= int64(end - dot - 1)
-		if start == dot {
-			for i = dot + 1; i < end; i++ {
-				if num[i] != '0' {
-					copy(num[dot:], num[i:end])
-					end -= i - dot
-					break
+		n = end - start - 1
+		normExp = dot - start
+	}
+
+	if origExp < 0 && (normExp < MinInt-origExp || normExp-n < MinInt-origExp) || origExp > 0 && (normExp > MaxInt-origExp || normExp-n > MaxInt-origExp) {
+		return num
+	}
+	normExp += origExp
+
+	// intExp would be the exponent if it were an integer
+	intExp := normExp - n
+	lenIntExp := 1
+	if intExp <= -10 || intExp >= 10 {
+		lenIntExp = strconv.LenInt(int64(intExp))
+	}
+
+	// there are three cases to consider when printing the number
+	// case 1: without decimals and with an exponent (large numbers)
+	// case 2: with decimals and without an exponent (around zero)
+	// case 3: without decimals and with a negative exponent (small numbers)
+	if normExp >= n {
+		// case 1
+		if dot < end {
+			if dot == start {
+				start = end - n
+			} else {
+				// TODO: copy the other part if shorter?
+				copy(num[dot:], num[dot+1:end])
+				end--
+			}
+		}
+		if normExp >= n+3 {
+			num[end] = 'e'
+			end++
+			for i := end + lenIntExp - 1; i >= end; i-- {
+				num[i] = byte(intExp%10) + '0'
+				intExp /= 10
+			}
+			end += lenIntExp
+		} else if normExp == n+2 {
+			num[end] = '0'
+			num[end+1] = '0'
+			end += 2
+		} else if normExp == n+1 {
+			num[end] = '0'
+			end++
+		}
+	} else if normExp >= -lenIntExp-1 {
+		// case 2
+		zeroes := -normExp
+		newDot := 0
+		if zeroes > 0 {
+			// dot placed at the front and add zeroes
+			newDot = end - n - zeroes - 1
+			if newDot != dot {
+				d := start - newDot
+				if d > 0 {
+					if dot < end {
+						// copy original digits behind the dot backwards
+						copy(num[dot+1+d:], num[dot+1:end])
+						if dot > start {
+							// copy original digits before the dot backwards
+							copy(num[start+d+1:], num[start:dot])
+						}
+					} else if dot > start {
+						// copy original digits before the dot backwards
+						copy(num[start+d:], num[start:dot])
+					}
+					newDot = start
+					end += d
+				} else {
+					start += -d
+				}
+				num[newDot] = '.'
+				for i := 0; i < zeroes; i++ {
+					num[newDot+1+i] = '0'
 				}
 			}
 		} else {
-			copy(num[dot:], num[dot+1:end])
-			end--
-		}
-	}
-
-	// append the exponent or change the mantissa to incorporate the exponent
-	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
-	n := 0                           // number of exp digits
-	if exp != 0 {
-		n = int(math.Log10(math.Abs(float64(exp)))) + 1
-	}
-	if exp == 0 {
-		if neg {
-			start--
-			num[start] = '-'
-		}
-		return num[start:end]
-	} else if int(relExp)+n+1 < 0 || 2 < exp { // add exponent for exp 3 and higher and where a lower exp really makes it shorter
-		num[end] = 'e'
-		end++
-		if exp < 0 {
-			num[end] = '-'
-			end++
-			exp = -exp
-		}
-		for i := end + n - 1; i >= end; i-- {
-			num[i] = byte(exp%10) + '0'
-			exp /= 10
-		}
-		end += n
-	} else if exp < 0 { // omit exponent
-		if relExp > 0 {
-			copy(num[start+int(relExp)+1:], num[start+int(relExp):end])
-			num[start+int(relExp)] = '.'
-			end++
-		} else {
-			copy(num[start-int(relExp)+1:], num[start:end])
-			num[start] = '.'
-			for i := 1; i < -int(relExp)+1; i++ {
-				num[start+i] = '0'
+			// placed in the middle
+			if dot == start {
+				// TODO: try if placing at the end reduces copying
+				// when there are zeroes after the dot
+				dot = end - n - 1
+				start = dot
+			} else if dot >= end {
+				// TODO: try if placing at the start reduces copying
+				// when input has no dot in it
+				dot = end
+				end++
 			}
-			end -= int(relExp) - 1
+			newDot = start + normExp
+			if newDot > dot {
+				// copy digits forwards
+				copy(num[dot:], num[dot+1:newDot+1])
+			} else if newDot < dot {
+				// copy digits backwards
+				copy(num[newDot+1:], num[newDot:dot])
+			}
+			num[newDot] = '.'
 		}
-	} else { // for exponent 1 and 2
-		num[end] = '0'
-		if exp == 2 {
-			num[end+1] = '0'
+
+		// apply precision
+		dot = newDot
+		if prec > -1 && dot+1+prec < end {
+			end = dot + 1 + prec
+			inc := num[end] >= '5'
+			if inc || num[end-1] == '0' {
+				for i := end - 1; i > start; i-- {
+					if i == dot {
+						end--
+					} else if inc {
+						if num[i] == '9' {
+							if i > dot {
+								end--
+							} else {
+								num[i] = '0'
+							}
+						} else {
+							num[i]++
+							inc = false
+							break
+						}
+					} else if i > dot && num[i] == '0' {
+						end--
+					}
+				}
+			}
+			if dot == start && end == start+1 {
+				if inc {
+					num[start] = '1'
+				} else {
+					num[start] = '0'
+				}
+			} else {
+				if dot+1 == end {
+					end--
+				}
+				if inc {
+					if num[start] == '9' {
+						num[start] = '0'
+						copy(num[start+1:], num[start:end])
+						end++
+						num[start] = '1'
+					} else {
+						num[start]++
+					}
+				}
+			}
 		}
-		end += int(exp)
+	} else {
+		// case 3
+		if dot < end {
+			if dot == start {
+				copy(num[start:], num[end-n:end])
+				end = start + n
+			} else {
+				copy(num[dot:], num[dot+1:end])
+				end--
+			}
+		}
+		num[end] = 'e'
+		num[end+1] = '-'
+		end += 2
+		intExp = -intExp
+		for i := end + lenIntExp - 1; i >= end; i-- {
+			num[i] = byte(intExp%10) + '0'
+			intExp /= 10
+		}
+		end += lenIntExp
 	}
 
 	if neg {
