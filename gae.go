@@ -14,5 +14,6 @@ func utilsFunc(w http.ResponseWriter, r *http.Request) utils.Utils {
 }
 
 func init() {
-	web.HttpInit(utilsFunc)
+	handler := web.BuildHandler(utilsFunc, false)
+	http.Handle("/", handler)
 }

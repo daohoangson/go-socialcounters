@@ -4,23 +4,33 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/NYTimes/gziphandler"
+	"github.com/rs/cors"
 	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 var uf utils.UtilsFunc
 
-func HttpInit(utilsFunc utils.UtilsFunc) {
+func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 	uf = utilsFunc
+	mux := http.NewServeMux()
 
 	fs := http.FileServer(httpFs{http.Dir("public")})
-	http.Handle("/css/", fs)
-	http.Handle("/img/", fs)
+	mux.Handle("/css/", fs)
+	mux.Handle("/img/", fs)
 
-	http.HandleFunc("/", httpRedirect)
-	http.HandleFunc("/js/all.js", httpAllJs)
-	http.HandleFunc("/js/data.json", httpDataJson)
-	http.HandleFunc("/v2/js/data.json", httpDataJson2)
-	http.HandleFunc("/js/jquery.plugin.js", httpJqueryPluginJs)
+	mux.HandleFunc("/", httpRedirect)
+	mux.HandleFunc("/js/all.js", httpAllJs)
+	mux.HandleFunc("/js/data.json", httpDataJson)
+	mux.HandleFunc("/v2/js/data.json", httpDataJson2)
+	mux.HandleFunc("/js/jquery.plugin.js", httpJqueryPluginJs)
+
+	handler := cors.Default().Handler(mux)
+	if !doGzip {
+		return handler
+	}
+
+	return gziphandler.GzipHandler(handler)
 }
 
 // start of https://groups.google.com/forum/#!msg/golang-nuts/bStLPdIVM6w/AXLz0hNqCrUJ

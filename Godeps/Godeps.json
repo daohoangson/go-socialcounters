@@ -4,12 +4,26 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
+			"ImportPath": "github.com/NYTimes/gziphandler",
+			"Rev": "172fbbbb329cf7e031dd3ab35766186fc2081eab"
+		},
+		{
 			"ImportPath": "github.com/bmizerany/mc",
 			"Rev": "eadf44dc7cb45eb1a735304f6988511d4f8c4bd6"
 		},
 		{
 			"ImportPath": "github.com/daohoangson/go-minify/css",
 			"Rev": "21824099efdd57011361c6d7047160846b3fec78"
+		},
+		{
+			"ImportPath": "github.com/rs/cors",
+			"Comment": "v1.0",
+			"Rev": "a62a804a8a009876ca59105f7899938a1349f4b3"
+		},
+		{
+			"ImportPath": "github.com/rs/xhandler",
+			"Comment": "v1.0-1-ged27b6f",
+			"Rev": "ed27b6fd65218132ee50cd95f38474a3d8a2cd12"
 		},
 		{
 			"ImportPath": "github.com/tdewolff/buffer",
@@ -74,6 +88,10 @@
 		{
 			"ImportPath": "github.com/tdewolff/strconv",
 			"Rev": "3e8091f4417ebaaa3910da63a45ea394ebbfb0e3"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "c46f265c325130a7a6c7b27db8c6fe14b64f1a68"
 		}
 	]
 }

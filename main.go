@@ -17,7 +17,7 @@ func utilsFunc(w http.ResponseWriter, r *http.Request) utils.Utils {
 }
 
 func main() {
-	web.HttpInit(utilsFunc)
+	handler := web.BuildHandler(utilsFunc, true)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -25,5 +25,5 @@ func main() {
 	}
 
 	fmt.Printf("Listening on %s...\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
