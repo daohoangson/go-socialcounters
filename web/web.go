@@ -211,7 +211,7 @@ func parseUrls(r *http.Request) []string {
 
 func parseServices(r *http.Request) []string {
 	q := r.URL.Query()
-	if services, ok := q["services"]; ok {
+	if services, ok := q["service"]; ok {
 		return services
 	}
 
