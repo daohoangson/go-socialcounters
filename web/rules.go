@@ -14,7 +14,7 @@ var blacklistPrepared = false
 var blacklist *regexp.Regexp
 
 func RulesAllowUrl(u utils.Utils, url string) bool {
-	if getBasic().MatchString(url) {
+	if !getBasic().MatchString(url) {
 		u.Debugf("web.RulesAllowUrl: %s is not a valid url", url)
 		return false
 	}
@@ -39,7 +39,7 @@ func RulesAllowUrl(u utils.Utils, url string) bool {
 func getBasic() *regexp.Regexp {
 	if basic == nil {
 		// this regex should filter out all weird strings
-		basic = regexp.MustCompile(`^https?://[^\r\n]$`)
+		basic = regexp.MustCompile(`^https?://[^\r\n]+$`)
 	}
 
 	return basic
