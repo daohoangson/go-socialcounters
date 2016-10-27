@@ -22,7 +22,22 @@
 			"Rev": "90e4d88dd57e7c5e4773faaa84478b24b5495e8c"
 		},
 		{
+			"ImportPath": "github.com/tdewolff/minify/css",
+			"Comment": "v2.0.0-133-g90e4d88",
+			"Rev": "90e4d88dd57e7c5e4773faaa84478b24b5495e8c"
+		},
+		{
 			"ImportPath": "github.com/tdewolff/minify/js",
+			"Comment": "v2.0.0-133-g90e4d88",
+			"Rev": "90e4d88dd57e7c5e4773faaa84478b24b5495e8c"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/minify/json",
+			"Comment": "v2.0.0-133-g90e4d88",
+			"Rev": "90e4d88dd57e7c5e4773faaa84478b24b5495e8c"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/minify/svg",
 			"Comment": "v2.0.0-133-g90e4d88",
 			"Rev": "90e4d88dd57e7c5e4773faaa84478b24b5495e8c"
 		},
@@ -32,7 +47,27 @@
 			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
 		},
 		{
+			"ImportPath": "github.com/tdewolff/parse/css",
+			"Comment": "v2.0.0-5-g5c35632",
+			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
+		},
+		{
 			"ImportPath": "github.com/tdewolff/parse/js",
+			"Comment": "v2.0.0-5-g5c35632",
+			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse/json",
+			"Comment": "v2.0.0-5-g5c35632",
+			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse/svg",
+			"Comment": "v2.0.0-5-g5c35632",
+			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse/xml",
 			"Comment": "v2.0.0-5-g5c35632",
 			"Rev": "5c35632ca368ebf46247ede2b96e9f6c0258fae0"
 		},

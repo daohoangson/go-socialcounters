@@ -43,11 +43,12 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	// keep using css.MinifyFromFile because it does the data uri inline for us
 	// TODO: drop this github.com/daohoangson/go-minify/css dependency
 	css := css.MinifyFromFile("public/css/main.css")
+	css = MinifyCss(css)
 	js = strings.Replace(js, "{css}", css, 1)
 
-	js = strings.Replace(js, "{facebooksvg}", readFileAsJson("private/img/facebook.svg"), 1)
-	js = strings.Replace(js, "{twittersvg}", readFileAsJson("private/img/twitter.svg"), 1)
-	js = strings.Replace(js, "{googlesvg}", readFileAsJson("private/img/google.svg"), 1)
+	js = strings.Replace(js, "{facebooksvg}", readSvgAsJson("private/img/facebook.svg"), 1)
+	js = strings.Replace(js, "{twittersvg}", readSvgAsJson("private/img/twitter.svg"), 1)
+	js = strings.Replace(js, "{googlesvg}", readSvgAsJson("private/img/google.svg"), 1)
 
 	js = strings.Replace(js, "{ads}", getAdsAsJson(), 1)
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
@@ -225,13 +226,13 @@ func getCacheKeyForResult(result services.ServiceResult) string{
 	return getCacheKey(result.Service, result.Url)
 }
 
-func readFileAsJson(filename string) string {
+func readSvgAsJson(filename string) string {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return "''"
 	}
 
-	json, err := json.Marshal(string(data))
+	json, err := json.Marshal(MinifySvg(string(data)))
 	if err != nil {
 		return "''"
 	}
@@ -258,6 +259,6 @@ func writeJson(w http.ResponseWriter, r *http.Request, json string) {
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
-		fmt.Fprintf(w, MinifyJs(json))
+		fmt.Fprintf(w, MinifyJson(json))
 	}
 }
