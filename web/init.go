@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/rs/cors"
 	"github.com/daohoangson/go-socialcounters/utils"
+	"github.com/rs/cors"
 )
 
 var uf utils.UtilsFunc

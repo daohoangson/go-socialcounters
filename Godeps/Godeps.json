@@ -12,6 +12,10 @@
 			"Rev": "eadf44dc7cb45eb1a735304f6988511d4f8c4bd6"
 		},
 		{
+			"ImportPath": "github.com/buger/jsonparser",
+			"Rev": "f04e003e4115787c6272636780bc206e5ffad6c4"
+		},
+		{
 			"ImportPath": "github.com/daohoangson/go-minify/css",
 			"Rev": "21824099efdd57011361c6d7047160846b3fec78"
 		},

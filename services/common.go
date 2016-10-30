@@ -11,11 +11,36 @@ func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
 	}
 
 	ch := make(chan ServiceResult, len(requests))
+	facebookUrls := []string{}
 
 	for _, request := range requests {
-		go func(serviceFunc ServiceFunc, url string) {
-			ch <- serviceFunc(client, url)
-		}(request.Func, request.Url)
+		switch request.Service {
+		case "Facebook":
+			facebookUrls = append(facebookUrls, request.Url)
+		case "Twitter":
+			go func(f ServiceFunc, url string) {
+				ch <- f(client, url)
+			}(Twitter, request.Url)
+		case "Google":
+			go func(f ServiceFunc, url string) {
+				ch <- f(client, url)
+			}(Google, request.Url)
+		default:
+			ch <- buildDummyServiceResuilt(request.Service, request.Url)
+		}
+	}
+
+	if len(facebookUrls) > 0 {
+		go func(f ServiceMultiFunc, urls []string) {
+			results := f(client, urls)
+			for _, url := range urls {
+				if r, ok := results.Results[url]; ok {
+					ch <- r
+				} else {
+					ch <- buildDummyServiceResuilt("Facebook", url)
+				}
+			}
+		}(FacebookMulti, facebookUrls)
 	}
 
 	for {
@@ -31,9 +56,17 @@ func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
 	return results
 }
 
+func buildDummyServiceResuilt(service string, url string) ServiceResult {
+	var r ServiceResult
+	r.Service = service
+	r.Url = url
+
+	return r
+}
+
 type ServiceRequest struct {
-	Func ServiceFunc
-	Url  string
+	Service string
+	Url     string
 }
 
 type ServiceResult struct {
@@ -41,7 +74,14 @@ type ServiceResult struct {
 	Url      string
 	Count    int64
 	Error    error
-	Response string
+	Response []byte
+}
+
+type ServiceResults struct {
+	Results  map[string]ServiceResult
+	Error    error
+	Response []byte
 }
 
 type ServiceFunc func(*http.Client, string) ServiceResult
+type ServiceMultiFunc func(*http.Client, []string) ServiceResults

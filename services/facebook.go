@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
-	"strconv"
+	"strings"
+
+	"github.com/buger/jsonparser"
 )
 
 import neturl "net/url"
@@ -16,49 +17,52 @@ func Facebook(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Facebook"
 	result.Url = url
-	
-	fbGraphUrl := fmt.Sprintf("https://graph.facebook.com/?ids=%s", neturl.QueryEscape(url))
+	result.Error = errors.New("Not implemented")
 
-	if appId := os.Getenv("FACEBOOK_APP_ID"); appId != "" {
-		if appSecret := os.Getenv("FACEBOOK_APP_SECRET"); appSecret != "" {
-			fbGraphUrl = fmt.Sprintf("%s&access_token=%s|%s", fbGraphUrl, appId, appSecret)
-		}
-	}
+	return result
+}
 
-	resp, err := client.Get(fbGraphUrl)
+func FacebookMulti(client *http.Client, urls []string) ServiceResults {
+	var results ServiceResults
+	results.Results = make(map[string]ServiceResult)
+
+	resp, err := client.Get(prepareFbGraphUrl(strings.Join(urls, ",")))
 	if err != nil {
-		result.Error = err
-		return result
+		results.Error = err
+		return results
 	}
 
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		result.Error = err
-		return result
+		results.Error = err
+		return results
 	}
-	json := string(respBody)
-	result.Response = json
+	results.Response = respBody
 
-	// use regex to avoid parsing the big json string (which is quite slow with the built-in json)
-	r, err := regexp.Compile(`"share_count":([\d\.]+)`)
-	if err != nil {
-		result.Error = err
-		return result
-	}
+	for _, url := range urls {
+		var result ServiceResult
+		result.Service = "Facebook"
+		result.Url = url
+		if shareCount, err := jsonparser.GetInt(respBody, url, "share", "share_count"); err == nil {
+			result.Count = shareCount
+		} else {
+			result.Error = err
+		}
 
-	matches := r.FindStringSubmatch(json)
-	if matches == nil {
-		result.Error = errors.New("`share_count` not found")
-		return result
-	}
-
-	count, err := strconv.ParseInt(matches[1], 10, 64)
-	if err == nil {
-		result.Count = count
-	} else {
-		result.Error = err
+		results.Results[result.Url] = result
 	}
 
-	return result
+	return results
+}
+
+func prepareFbGraphUrl(ids string) string {
+	accessToken := ""
+	if appId := os.Getenv("FACEBOOK_APP_ID"); appId != "" {
+		if appSecret := os.Getenv("FACEBOOK_APP_SECRET"); appSecret != "" {
+			accessToken = fmt.Sprintf("&access_token=%s|%s", appId, appSecret)
+		}
+	}
+
+	return fmt.Sprintf("https://graph.facebook.com/?ids=%s&fields=share%s", neturl.QueryEscape(ids), accessToken)
 }

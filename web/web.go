@@ -126,25 +126,11 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 			}
 
 			if _, ok := dataMap[requestedUrl][requestedService]; !ok {
-				var serviceFunc services.ServiceFunc
-				switch requestedService {
-				case "Facebook":
-					serviceFunc = services.Facebook
-				case "Twitter":
-					serviceFunc = services.Twitter
-				case "Google":
-					serviceFunc = services.Google
-				}
+				var request services.ServiceRequest
+				request.Service = requestedService
+				request.Url = requestedUrl
 
-				if serviceFunc != nil {
-					var request services.ServiceRequest
-					request.Func = serviceFunc
-					request.Url = requestedUrl
-
-					requests = append(requests, request)
-				} else {
-					u.Errorf("Unrecognized requested service %s", requestedService)
-				}
+				requests = append(requests, request)
 			}
 		}
 	}
@@ -247,7 +233,7 @@ func getCacheKey(service string, url string) string {
 	return fmt.Sprintf("%s/%s", service, url)
 }
 
-func getCacheKeyForResult(result services.ServiceResult) string{
+func getCacheKeyForResult(result services.ServiceResult) string {
 	return getCacheKey(result.Service, result.Url)
 }
 

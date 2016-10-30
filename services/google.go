@@ -41,8 +41,8 @@ func Google(client *http.Client, url string) ServiceResult {
 		result.Error = err
 		return result
 	}
+	result.Response = respBody
 	json := string(respBody)
-	result.Response = json
 
 	// use regex to avoid parsing the big json string (which is quite slow with the built-in json)
 	r, err := regexp.Compile(`"count": ([\d\.E]+)`)
