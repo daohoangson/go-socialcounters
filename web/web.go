@@ -148,8 +148,12 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 
 			serviceResultTtl := ttl
 			if serviceResult.Count < 1 {
-				serviceResultTtl = int64(3)
-				u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
+				if ttlRestrictedEnv := os.Getenv("TTL_COUNT_EQUALS_ZERO"); ttlRestrictedEnv != "" {
+					if ttlRestricted, err := strconv.ParseInt(ttlRestrictedEnv, 10, 64); err == nil {
+						serviceResultTtl = ttlRestricted
+						u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
+					}
+				}
 			}
 
 			u.MemorySet(getCacheKeyForResult(serviceResult), []byte(fmt.Sprintf("%d", serviceResult.Count)), serviceResultTtl)
@@ -196,8 +200,13 @@ func parseTargetAsJson(r *http.Request) string {
 func parseTtl(r *http.Request) int64 {
 	q := r.URL.Query()
 	if ttls, ok := q["ttl"]; ok {
-		ttl, err := strconv.ParseInt(ttls[0], 10, 64)
-		if err == nil {
+		if ttl, err := strconv.ParseInt(ttls[0], 10, 64); err == nil {
+			return ttl
+		}
+	}
+
+	if env := os.Getenv("TTL_DEFAULT"); env != "" {
+		if ttl, err := strconv.ParseInt(env, 10, 64); err == nil {
 			return ttl
 		}
 	}
