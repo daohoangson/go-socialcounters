@@ -141,7 +141,13 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 
 		for _, serviceResult := range serviceResults {
 			dataMap[serviceResult.Url][serviceResult.Service] = serviceResult.Count
-			u.MemorySet(getCacheKeyForResult(serviceResult), []byte(fmt.Sprintf("%d", serviceResult.Count)), ttl)
+
+			serviceResultTtl := int64(3)
+			if serviceResult.Count > 0 {
+				serviceResultTtl = ttl
+			}
+
+			u.MemorySet(getCacheKeyForResult(serviceResult), []byte(fmt.Sprintf("%d", serviceResult.Count)), serviceResultTtl)
 		}
 	}
 
