@@ -44,10 +44,14 @@ func FacebookMulti(client *http.Client, urls []string) ServiceResults {
 		var result ServiceResult
 		result.Service = "Facebook"
 		result.Url = url
-		if shareCount, err := jsonparser.GetInt(respBody, url, "share", "share_count"); err == nil {
-			result.Count = shareCount
-		} else {
+
+		if respUrl, _, _, err := jsonparser.Get(respBody, url); err != nil {
 			result.Error = err
+		} else {
+			result.Response = respUrl
+			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err == nil {
+				result.Count = shareCount
+			}
 		}
 
 		results.Results[result.Url] = result
