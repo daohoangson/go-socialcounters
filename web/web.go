@@ -226,6 +226,17 @@ func parseUrls(r *http.Request) []string {
 		}
 	}
 
+	if r.Method == "POST" {
+		r.ParseForm()
+		if formUrls, ok := r.PostForm["url"]; ok {
+			for _, formUrl := range formUrls {
+				if len(formUrl) > 0 {
+					urls = append(urls, formUrl)
+				}
+			}
+		}
+	}
+
 	return urls
 }
 
