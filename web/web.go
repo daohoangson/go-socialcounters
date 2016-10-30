@@ -271,9 +271,17 @@ func readSvgAsJson(filename string) string {
 	return string(json)
 }
 
+func writeCacheControlHeaders(w http.ResponseWriter, r *http.Request) {
+	ttl := parseTtl(r)
+	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
+
+	expires := time.Now().Add(time.Duration(ttl) * time.Second)
+	w.Header().Set("Expires", expires.Format(time.RFC1123))
+}
+
 func writeJs(w http.ResponseWriter, r *http.Request, js string) {
+	writeCacheControlHeaders(w, r)
 	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
 	fmt.Fprintf(w, MinifyJs(js))
 }
 
@@ -288,8 +296,8 @@ func writeJson(w http.ResponseWriter, r *http.Request, json string) {
 		js := fmt.Sprintf("%s(%s);", callback, json)
 		writeJs(w, r, js)
 	} else {
+		writeCacheControlHeaders(w, r)
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", parseTtl(r)))
 		fmt.Fprintf(w, MinifyJson(json))
 	}
 }
