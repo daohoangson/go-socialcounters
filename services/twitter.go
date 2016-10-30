@@ -1,9 +1,10 @@
 package services
 
 import (
-	"encoding/json"
-	"io"
+	"io/ioutil"
 	"net/http"
+
+	"github.com/buger/jsonparser"
 )
 
 import neturl "net/url"
@@ -25,17 +26,18 @@ func Twitter(client *http.Client, url string) ServiceResult {
 	}
 
 	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-	for {
-		var tr twitterResponse
-		if err := dec.Decode(&tr); err != nil {
-			if err != io.EOF {
-				result.Error = err
-			}
-			break
-		}
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		result.Error = err
+		return result
+	}
+	result.Response = respBody
 
-		result.Count = int64(tr.Count)
+	if count, err := jsonparser.GetInt(respBody, "count"); err != nil {
+		result.Error = err
+		return result
+	} else {
+		result.Count = count
 	}
 
 	return result

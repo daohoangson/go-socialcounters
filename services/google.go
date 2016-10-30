@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"regexp"
-	"strconv"
+
+	"github.com/buger/jsonparser"
 )
 
 func Google(client *http.Client, url string) ServiceResult {
@@ -42,24 +42,20 @@ func Google(client *http.Client, url string) ServiceResult {
 		return result
 	}
 	result.Response = respBody
-	json := string(respBody)
 
-	// use regex to avoid parsing the big json string (which is quite slow with the built-in json)
-	r, err := regexp.Compile(`"count": ([\d\.E]+)`)
-	if err != nil {
-		result.Error = err
-		return result
-	}
+	jsonparser.ArrayEach(respBody, func(element []byte, _ jsonparser.ValueType, _ int, err error) {
+		if err != nil {
+			result.Error = err
+			return
+		}
 
-	matches := r.FindStringSubmatch(json)
-	if matches == nil {
-		return result
-	}
-
-	count, err := strconv.ParseFloat(matches[1], 64)
-	if err == nil {
-		result.Count = int64(count)
-	}
+		if count, err := jsonparser.GetFloat(element, "result", "metadata", "globalCounts", "count"); err != nil {
+			result.Error = err
+			return
+		} else {
+			result.Count = int64(count)
+		}
+	})
 
 	return result
 }
