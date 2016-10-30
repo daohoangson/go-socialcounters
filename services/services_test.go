@@ -25,16 +25,8 @@ func testOk(t *testing.T, f ServiceFunc, url string, expectedService string, exp
 		url, serviceResult.Count, serviceResult.Response)
 }
 
-func testFacebook(t *testing.T, f ServiceFunc) {
-	url := "https://facebook.com"
-	expectedService := "Facebook"
-	expectedCount := int64(100000000)
-	testOk(t, f, url, expectedService, expectedCount)
-}
-
 func TestFacebook(t *testing.T) {
-	testFacebook(t, FacebookDirect)
-	testFacebook(t, FacebookCrossOrigin)
+	testOk(t, Facebook, "https://facebook.com", "Facebook", int64(100000000))
 }
 
 func TestGoogle(t *testing.T) {

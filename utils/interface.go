@@ -2,13 +2,9 @@ package utils
 
 import (
 	"net/http"
-
-	"github.com/daohoangson/go-socialcounters/services"
 )
 
 type Utils interface {
-	ServiceFunc(service string) services.ServiceFunc
-
 	HttpClient() *http.Client
 
 	MemorySet(key string, value []byte, ttl int64) error

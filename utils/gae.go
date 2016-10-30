@@ -10,8 +10,6 @@ import (
 	"appengine"
 	"appengine/memcache"
 	"appengine/urlfetch"
-
-	"github.com/daohoangson/go-socialcounters/services"
 )
 
 type GAE struct {
@@ -23,22 +21,6 @@ func GaeNew(r *http.Request) Utils {
 	utils.context = appengine.NewContext(r)
 
 	return utils
-}
-
-func (u GAE) ServiceFunc(service string) services.ServiceFunc {
-	switch service {
-	case "Facebook":
-		// we have to go through crossorigin.me because for some reason Facebook returns bogus data
-		// especially when request are made within GAE. I have tested with user agent and some other
-		// GAE special request headers but haven't found the real culprit, yet...
-		return services.FacebookCrossOrigin
-	case "Twitter":
-		return services.Twitter
-	case "Google":
-		return services.Google
-	}
-
-	return nil
 }
 
 func (u GAE) HttpClient() *http.Client {

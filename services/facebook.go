@@ -12,12 +12,12 @@ import (
 
 import neturl "net/url"
 
-func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult {
+func Facebook(client *http.Client, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Facebook"
 	result.Url = url
 	
-	fbGraphUrl := fmt.Sprintf("%s?ids=%s", fbGraphRoot, neturl.QueryEscape(url))
+	fbGraphUrl := fmt.Sprintf("https://graph.facebook.com/?ids=%s", neturl.QueryEscape(url))
 
 	if appId := os.Getenv("FACEBOOK_APP_ID"); appId != "" {
 		if appSecret := os.Getenv("FACEBOOK_APP_SECRET"); appSecret != "" {
@@ -61,12 +61,4 @@ func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult
 	}
 
 	return result
-}
-
-func FacebookCrossOrigin(client *http.Client, url string) ServiceResult {
-	return facebook("http://crossorigin.me/https://graph.facebook.com/", client, url)
-}
-
-func FacebookDirect(client *http.Client, url string) ServiceResult {
-	return facebook("https://graph.facebook.com/", client, url)
 }

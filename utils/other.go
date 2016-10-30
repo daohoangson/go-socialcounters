@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/bmizerany/mc"
-	"github.com/daohoangson/go-socialcounters/services"
 )
 
 type Other struct {
@@ -19,19 +18,6 @@ func OtherNew(r *http.Request) Utils {
 	utils := new(Other)
 
 	return utils
-}
-
-func (u Other) ServiceFunc(service string) services.ServiceFunc {
-	switch service {
-	case "Facebook":
-		return services.FacebookDirect
-	case "Twitter":
-		return services.Twitter
-	case "Google":
-		return services.Google
-	}
-
-	return nil
 }
 
 func (u Other) HttpClient() *http.Client {

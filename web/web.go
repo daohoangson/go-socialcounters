@@ -112,6 +112,7 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 
 	for _, requestedUrl := range requestedUrls {
 		if !RulesAllowUrl(u, requestedUrl) {
+			u.Errorf("Url not allowed %s", requestedUrl)
 			continue
 		}
 
@@ -125,12 +126,24 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 			}
 
 			if _, ok := dataMap[requestedUrl][requestedService]; !ok {
-				if serviceFunc := u.ServiceFunc(requestedService); serviceFunc != nil {
+				var serviceFunc services.ServiceFunc
+				switch requestedService {
+				case "Facebook":
+					serviceFunc = services.Facebook
+				case "Twitter":
+					serviceFunc = services.Twitter
+				case "Google":
+					serviceFunc = services.Google
+				}
+
+				if serviceFunc != nil {
 					var request services.ServiceRequest
 					request.Func = serviceFunc
 					request.Url = requestedUrl
 
 					requests = append(requests, request)
+				} else {
+					u.Errorf("Unrecognized requested service %s", requestedService)
 				}
 			}
 		}
@@ -147,9 +160,10 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 				u.Debugf("Response for %s on %s: %s", serviceResult.Url, serviceResult.Service, serviceResult.Response)
 			}
 
-			serviceResultTtl := int64(3)
-			if serviceResult.Count > 0 {
-				serviceResultTtl = ttl
+			serviceResultTtl := ttl
+			if serviceResult.Count < 1 {
+				serviceResultTtl = int64(3)
+				u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
 			}
 
 			u.MemorySet(getCacheKeyForResult(serviceResult), []byte(fmt.Sprintf("%d", serviceResult.Count)), serviceResultTtl)
