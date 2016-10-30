@@ -142,6 +142,11 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 		for _, serviceResult := range serviceResults {
 			dataMap[serviceResult.Url][serviceResult.Service] = serviceResult.Count
 
+			if serviceResult.Error != nil {
+				u.Errorf("Error for %s on %s: %s", serviceResult.Url, serviceResult.Service, serviceResult.Error)
+				u.Debugf("Response for %s on %s: %s", serviceResult.Url, serviceResult.Service, serviceResult.Response)
+			}
+
 			serviceResultTtl := int64(3)
 			if serviceResult.Count > 0 {
 				serviceResultTtl = ttl

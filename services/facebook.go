@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 )
@@ -17,6 +18,13 @@ func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult
 	result.Url = url
 	
 	fbGraphUrl := fmt.Sprintf("%s?ids=%s", fbGraphRoot, neturl.QueryEscape(url))
+
+	if appId := os.Getenv("FACEBOOK_APP_ID"); appId != "" {
+		if appSecret := os.Getenv("FACEBOOK_APP_SECRET"); appSecret != "" {
+			fbGraphUrl = fmt.Sprintf("%s&access_token=%s|%s", fbGraphUrl, appId, appSecret)
+		}
+	}
+
 	resp, err := client.Get(fbGraphUrl)
 	if err != nil {
 		result.Error = err
@@ -56,7 +64,7 @@ func facebook(fbGraphRoot string, client *http.Client, url string) ServiceResult
 }
 
 func FacebookCrossOrigin(client *http.Client, url string) ServiceResult {
-	return facebook("http://crossorigin.me/http://graph.facebook.com/", client, url)
+	return facebook("http://crossorigin.me/https://graph.facebook.com/", client, url)
 }
 
 func FacebookDirect(client *http.Client, url string) ServiceResult {
