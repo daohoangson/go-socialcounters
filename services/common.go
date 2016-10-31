@@ -1,10 +1,10 @@
 package services
 
 import (
-	"net/http"
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
+func Batch(u utils.Utils, requests []ServiceRequest) []ServiceResult {
 	results := []ServiceResult{}
 	if len(requests) < 1 {
 		return results
@@ -19,11 +19,11 @@ func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
 			facebookUrls = append(facebookUrls, request.Url)
 		case "Twitter":
 			go func(f ServiceFunc, url string) {
-				ch <- f(client, url)
+				ch <- f(u, url)
 			}(Twitter, request.Url)
 		case "Google":
 			go func(f ServiceFunc, url string) {
-				ch <- f(client, url)
+				ch <- f(u, url)
 			}(Google, request.Url)
 		default:
 			ch <- buildDummyServiceResuilt(request.Service, request.Url)
@@ -32,7 +32,7 @@ func Batch(client *http.Client, requests []ServiceRequest) []ServiceResult {
 
 	if len(facebookUrls) > 0 {
 		go func(f ServiceMultiFunc, urls []string) {
-			results := f(client, urls)
+			results := f(u, urls)
 			for _, url := range urls {
 				if r, ok := results.Results[url]; ok {
 					ch <- r
@@ -83,5 +83,5 @@ type ServiceResults struct {
 	Response []byte
 }
 
-type ServiceFunc func(*http.Client, string) ServiceResult
-type ServiceMultiFunc func(*http.Client, []string) ServiceResults
+type ServiceFunc func(utils.Utils, string) ServiceResult
+type ServiceMultiFunc func(utils.Utils, []string) ServiceResults

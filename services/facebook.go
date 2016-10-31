@@ -1,32 +1,21 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"os"
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 import neturl "net/url"
 
-func Facebook(client *http.Client, url string) ServiceResult {
-	var result ServiceResult
-	result.Service = "Facebook"
-	result.Url = url
-	result.Error = errors.New("Not implemented")
-
-	return result
-}
-
-func FacebookMulti(client *http.Client, urls []string) ServiceResults {
+func FacebookMulti(u utils.Utils, urls []string) ServiceResults {
 	var results ServiceResults
 	results.Results = make(map[string]ServiceResult)
 
-	resp, err := client.Get(prepareFbGraphUrl(strings.Join(urls, ",")))
+	resp, err := u.HttpClient().Get(prepareFbGraphUrl(u, strings.Join(urls, ",")))
 	if err != nil {
 		results.Error = err
 		return results
@@ -60,10 +49,10 @@ func FacebookMulti(client *http.Client, urls []string) ServiceResults {
 	return results
 }
 
-func prepareFbGraphUrl(ids string) string {
+func prepareFbGraphUrl(u utils.Utils, ids string) string {
 	accessToken := ""
-	if appId := os.Getenv("FACEBOOK_APP_ID"); appId != "" {
-		if appSecret := os.Getenv("FACEBOOK_APP_SECRET"); appSecret != "" {
+	if appId := u.ConfigGet("FACEBOOK_APP_ID"); appId != "" {
+		if appSecret := u.ConfigGet("FACEBOOK_APP_SECRET"); appSecret != "" {
 			accessToken = fmt.Sprintf("&access_token=%s|%s", appId, appSecret)
 		}
 	}

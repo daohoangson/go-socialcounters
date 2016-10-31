@@ -1,20 +1,13 @@
 package services
 
 import (
-	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-func runOne(f ServiceFunc, url string) ServiceResult {
-	client := new(http.Client)
-	return f(client, url)
-}
-
-func runMulti(f ServiceMultiFunc, urls []string) ServiceResults {
-	client := new(http.Client)
-	return f(client, urls)
-}
+var u = utils.OtherNew(nil)
 
 func assert(t *testing.T, serviceResult ServiceResult, url string, expectedService string, expectedCount int64) {
 	if serviceResult.Error != nil {
@@ -35,7 +28,7 @@ func assert(t *testing.T, serviceResult ServiceResult, url string, expectedServi
 }
 
 func testOne(t *testing.T, f ServiceFunc, url string, expectedService string, expectedCount int64) {
-	serviceResult := runOne(f, url)
+	serviceResult := f(u, url)
 	assert(t, serviceResult, url, expectedService, expectedCount)
 
 	t.Logf("%s(%s): Count=%d, Response=%s", serviceResult.Service,
@@ -47,7 +40,7 @@ func testMulti(t *testing.T, f ServiceMultiFunc, urls []string, expectedService 
 		t.Fatalf("Not enough expected counts (%d), there are %d urls", len(expectedCounts), len(urls))
 	}
 
-	serviceResults := runMulti(f, urls)
+	serviceResults := f(u, urls)
 
 	if len(serviceResults.Results) != len(urls) {
 		t.Fatalf("Not enough results (%d), requested for %d urls", len(serviceResults.Results), len(urls))
@@ -81,13 +74,12 @@ func TestTwitter(t *testing.T) {
 }
 
 func TestBatch(t *testing.T) {
-	client := new(http.Client)
 	requests := []ServiceRequest{ServiceRequest{Service: "Facebook", Url: "https://facebook.com"},
 		ServiceRequest{Service: "Google", Url: "https://google.com"},
 		ServiceRequest{Service: "Twitter", Url: "https://twitter.com"},
 		ServiceRequest{Service: "Facebook", Url: "https://developers.facebook.com"}}
 
-	serviceResults := Batch(client, requests)
+	serviceResults := Batch(u, requests)
 
 	for _, serviceResult := range serviceResults {
 		if serviceResult.Count < 1 {

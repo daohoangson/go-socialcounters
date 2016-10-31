@@ -5,12 +5,15 @@ package utils
 import (
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"appengine"
 	"appengine/memcache"
 	"appengine/urlfetch"
 )
+
+var gaeConfigs = make(map[string]string)
 
 type GAE struct {
 	context appengine.Context
@@ -25,6 +28,18 @@ func GaeNew(r *http.Request) Utils {
 
 func (u GAE) HttpClient() *http.Client {
 	return urlfetch.Client(u.context)
+}
+
+func (u GAE) ConfigGet(key string) string {
+	if value, ok := gaeConfigs[key]; ok {
+		return value
+	}
+
+	env := os.Getenv(key)
+	u.Infof("Loaded config[%s] = %q", key, env)
+	gaeConfigs[key] = env
+
+	return env
 }
 
 func (u GAE) MemorySet(key string, value []byte, ttl int64) error {

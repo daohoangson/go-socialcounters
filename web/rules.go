@@ -1,7 +1,6 @@
 package web
 
 import (
-	"os"
 	"regexp"
 
 	"github.com/daohoangson/go-socialcounters/utils"
@@ -19,14 +18,14 @@ func RulesAllowUrl(u utils.Utils, url string) bool {
 		return false
 	}
 
-	if wl := getWhitelist(); wl != nil {
+	if wl := getWhitelist(u); wl != nil {
 		if !wl.MatchString(url) {
 			u.Debugf("web.RulesAllowUrl: %s is not whitelisted", url)
 			return false
 		}
 	}
 
-	if bl := getBlacklist(); bl != nil {
+	if bl := getBlacklist(u); bl != nil {
 		if bl.MatchString(url) {
 			u.Debugf("web.RulesAllowUrl: %s is blacklisted", url)
 			return false
@@ -45,9 +44,9 @@ func getBasic() *regexp.Regexp {
 	return basic
 }
 
-func getWhitelist() *regexp.Regexp {
+func getWhitelist(u utils.Utils) *regexp.Regexp {
 	if !whitelistPrepared {
-		if value := os.Getenv("WHITELIST"); value != "" {
+		if value := u.ConfigGet("WHITELIST"); value != "" {
 			whitelist, _ = regexp.Compile(value)
 		}
 
@@ -57,9 +56,9 @@ func getWhitelist() *regexp.Regexp {
 	return whitelist
 }
 
-func getBlacklist() *regexp.Regexp {
+func getBlacklist(u utils.Utils) *regexp.Regexp {
 	if !blacklistPrepared {
-		if value := os.Getenv("BLACKLIST"); value != "" {
+		if value := u.ConfigGet("BLACKLIST"); value != "" {
 			blacklist, _ = regexp.Compile(value)
 		}
 

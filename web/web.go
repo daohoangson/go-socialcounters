@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -50,12 +49,12 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	js = strings.Replace(js, "{twittersvg}", readSvgAsJson("private/img/twitter.svg"), 1)
 	js = strings.Replace(js, "{googlesvg}", readSvgAsJson("private/img/google.svg"), 1)
 
-	js = strings.Replace(js, "{ads}", getAdsAsJson(), 1)
+	js = strings.Replace(js, "{ads}", getAdsAsJson(u), 1)
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)
 	js = strings.Replace(js, "{shorten}", parseShortenAsBool(r), 1)
 	js = strings.Replace(js, "{target}", parseTargetAsJson(r), 1)
 
-	writeJs(w, r, js)
+	writeJs(u, w, r, js)
 }
 
 func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request, oneUrl bool) {
@@ -66,7 +65,7 @@ func DataJson(u utils.Utils, w http.ResponseWriter, r *http.Request, oneUrl bool
 		return
 	}
 
-	writeJson(w, r, countsJson)
+	writeJson(u, w, r, countsJson)
 }
 
 func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
@@ -79,13 +78,13 @@ func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 
 	jsonUrl := fmt.Sprintf("//%s/js/data.json", r.Host)
 	js := strings.Replace(string(jsData), "{jsonUrl}", jsonUrl, 1)
-	js = strings.Replace(js, "{ads}", getAdsAsJson(), 1)
+	js = strings.Replace(js, "{ads}", getAdsAsJson(u), 1)
 
-	writeJs(w, r, js)
+	writeJs(u, w, r, js)
 }
 
-func getAdsAsJson() string {
-	json, err := json.Marshal(os.Getenv("ADS"))
+func getAdsAsJson(u utils.Utils) string {
+	json, err := json.Marshal(u.ConfigGet("ADS"))
 	if err != nil {
 		return "''"
 	}
@@ -106,7 +105,7 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 	}
 
 	requestedServices := parseServices(r)
-	ttl := parseTtl(r)
+	ttl := parseTtl(u, r)
 	dataMap := make(map[string]map[string]int64)
 	requests := []services.ServiceRequest{}
 
@@ -136,7 +135,7 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 	}
 
 	if len(requests) > 0 {
-		serviceResults := services.Batch(u.HttpClient(), requests)
+		serviceResults := services.Batch(u, requests)
 
 		for _, serviceResult := range serviceResults {
 			dataMap[serviceResult.Url][serviceResult.Service] = serviceResult.Count
@@ -148,7 +147,7 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 
 			serviceResultTtl := ttl
 			if serviceResult.Count < 1 {
-				if ttlRestrictedEnv := os.Getenv("TTL_COUNT_EQUALS_ZERO"); ttlRestrictedEnv != "" {
+				if ttlRestrictedEnv := u.ConfigGet("TTL_COUNT_EQUALS_ZERO"); ttlRestrictedEnv != "" {
 					if ttlRestricted, err := strconv.ParseInt(ttlRestrictedEnv, 10, 64); err == nil {
 						serviceResultTtl = ttlRestricted
 						u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
@@ -197,7 +196,7 @@ func parseTargetAsJson(r *http.Request) string {
 	return target
 }
 
-func parseTtl(r *http.Request) int64 {
+func parseTtl(u utils.Utils, r *http.Request) int64 {
 	q := r.URL.Query()
 	if ttls, ok := q["ttl"]; ok {
 		if ttl, err := strconv.ParseInt(ttls[0], 10, 64); err == nil {
@@ -205,7 +204,7 @@ func parseTtl(r *http.Request) int64 {
 		}
 	}
 
-	if env := os.Getenv("TTL_DEFAULT"); env != "" {
+	if env := u.ConfigGet("TTL_DEFAULT"); env != "" {
 		if ttl, err := strconv.ParseInt(env, 10, 64); err == nil {
 			return ttl
 		}
@@ -271,21 +270,21 @@ func readSvgAsJson(filename string) string {
 	return string(json)
 }
 
-func writeCacheControlHeaders(w http.ResponseWriter, r *http.Request) {
-	ttl := parseTtl(r)
+func writeCacheControlHeaders(u utils.Utils, w http.ResponseWriter, r *http.Request) {
+	ttl := parseTtl(u, r)
 	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
 
 	expires := time.Now().Add(time.Duration(ttl) * time.Second)
 	w.Header().Set("Expires", expires.Format(time.RFC1123))
 }
 
-func writeJs(w http.ResponseWriter, r *http.Request, js string) {
-	writeCacheControlHeaders(w, r)
+func writeJs(u utils.Utils, w http.ResponseWriter, r *http.Request, js string) {
+	writeCacheControlHeaders(u, w, r)
 	w.Header().Set("Content-Type", "application/javascript")
 	fmt.Fprintf(w, MinifyJs(js))
 }
 
-func writeJson(w http.ResponseWriter, r *http.Request, json string) {
+func writeJson(u utils.Utils, w http.ResponseWriter, r *http.Request, json string) {
 	q := r.URL.Query()
 	var callback string
 	if callbacks, ok := q["callback"]; ok {
@@ -294,9 +293,9 @@ func writeJson(w http.ResponseWriter, r *http.Request, json string) {
 
 	if len(callback) > 0 {
 		js := fmt.Sprintf("%s(%s);", callback, json)
-		writeJs(w, r, js)
+		writeJs(u, w, r, js)
 	} else {
-		writeCacheControlHeaders(w, r)
+		writeCacheControlHeaders(u, w, r)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, MinifyJson(json))
 	}

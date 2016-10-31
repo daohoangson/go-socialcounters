@@ -7,9 +7,10 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-func Google(client *http.Client, url string) ServiceResult {
+func Google(u utils.Utils, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Google"
 	result.Url = url
@@ -29,7 +30,7 @@ func Google(client *http.Client, url string) ServiceResult {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
+	resp, err := u.HttpClient().Do(req)
 	if err != nil {
 		result.Error = err
 		return result

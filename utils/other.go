@@ -24,6 +24,10 @@ func (u Other) HttpClient() *http.Client {
 	return &http.Client{}
 }
 
+func (u Other) ConfigGet(key string) string {
+	return os.Getenv(key)
+}
+
 func (u Other) MemorySet(key string, value []byte, ttl int64) error {
 	conn := getMcConn(u)
 	if conn == nil {

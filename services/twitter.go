@@ -2,9 +2,9 @@ package services
 
 import (
 	"io/ioutil"
-	"net/http"
 
 	"github.com/buger/jsonparser"
+	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 import neturl "net/url"
@@ -14,12 +14,12 @@ type twitterResponse struct {
 	Url   string
 }
 
-func Twitter(client *http.Client, url string) ServiceResult {
+func Twitter(u utils.Utils, url string) ServiceResult {
 	var result ServiceResult
 	result.Service = "Twitter"
 	result.Url = url
 
-	resp, err := client.Get("https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url))
+	resp, err := u.HttpClient().Get("https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url))
 	if err != nil {
 		result.Error = err
 		return result
