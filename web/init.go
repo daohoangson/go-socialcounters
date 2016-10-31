@@ -25,6 +25,8 @@ func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 	mux.HandleFunc("/v2/js/data.json", httpDataJson2)
 	mux.HandleFunc("/js/jquery.plugin.js", httpJqueryPluginJs)
 
+	mux.HandleFunc("/config", httpConfig)
+
 	handler := cors.Default().Handler(mux)
 	if !doGzip {
 		return handler
@@ -79,4 +81,13 @@ func httpDataJson2(w http.ResponseWriter, r *http.Request) {
 func httpJqueryPluginJs(w http.ResponseWriter, r *http.Request) {
 	u := uf(w, r)
 	JqueryPluginJs(u, w, r)
+}
+
+func httpConfig(w http.ResponseWriter, r *http.Request) {
+	u := uf(w, r)
+	if r.Method == "GET" {
+		ConfigGet(u, w, r)
+	} else {
+		ConfigPost(u, w, r)
+	}
 }

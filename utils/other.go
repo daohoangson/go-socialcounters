@@ -24,6 +24,10 @@ func (u Other) HttpClient() *http.Client {
 	return &http.Client{}
 }
 
+func (u Other) ConfigSet(key string, value string) error {
+	return errors.New("Not implemented")
+}
+
 func (u Other) ConfigGet(key string) string {
 	return os.Getenv(key)
 }

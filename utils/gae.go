@@ -9,11 +9,17 @@ import (
 	"time"
 
 	"appengine"
+	"appengine/datastore"
 	"appengine/memcache"
 	"appengine/urlfetch"
 )
 
 var gaeConfigs = make(map[string]string)
+var gaeConfigDatastoreKind = "Config"
+type GaeConfig struct {
+    Value   string    `datastore:"value,noindex"`
+    Modifed time.Time `datastore:"modified,noindex"`
+}
 
 type GAE struct {
 	context appengine.Context
@@ -30,16 +36,48 @@ func (u GAE) HttpClient() *http.Client {
 	return urlfetch.Client(u.context)
 }
 
+func (u GAE) ConfigSet(key string, value string) error {
+	configSecret := os.Getenv("CONFIG_SECRET")
+	if len(configSecret) < 1 {
+		return errors.New("Env var CONFIG_SECRET must be configured to use ConfigSet")
+	}
+
+	var e GaeConfig
+	e.Value = value
+	e.Modifed = time.Now()
+
+	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
+	if _, err := datastore.Put(u.context, k, &e); err != nil {
+        return err
+    }
+
+    gaeConfigs = make(map[string]string)
+    u.Infof("Saved config[%s] = %q", key, value)
+    return nil
+}
+
 func (u GAE) ConfigGet(key string) string {
 	if value, ok := gaeConfigs[key]; ok {
 		return value
 	}
 
-	env := os.Getenv(key)
-	u.Infof("Loaded config[%s] = %q", key, env)
-	gaeConfigs[key] = env
+	configSecret := os.Getenv("CONFIG_SECRET")
+	if len(configSecret) < 1 {
+		env := os.Getenv(key)
+		u.Infof("Loaded via env config[%s] = %q", key, env)
+		gaeConfigs[key] = env
 
-	return env
+		return env
+	}
+
+	var e GaeConfig
+	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
+	datastore.Get(u.context, k, &e);
+
+	u.Infof("Loaded via datastore config[%s] = %q, modified = %s", key, e.Value, e.Modifed)
+	gaeConfigs[key] = e.Value
+
+	return e.Value
 }
 
 func (u GAE) MemorySet(key string, value []byte, ttl int64) error {

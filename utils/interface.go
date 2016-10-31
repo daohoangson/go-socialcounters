@@ -7,6 +7,7 @@ import (
 type Utils interface {
 	HttpClient() *http.Client
 
+	ConfigSet(key string, value string) error
 	ConfigGet(key string) string
 
 	MemorySet(key string, value []byte, ttl int64) error
