@@ -22,8 +22,9 @@ func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 	mux.HandleFunc("/", httpRedirect)
 	mux.HandleFunc("/js/all.js", httpAllJs)
 	mux.HandleFunc("/js/data.json", httpDataJson)
-	mux.HandleFunc("/v2/js/data.json", httpDataJson2)
 	mux.HandleFunc("/js/jquery.plugin.js", httpJqueryPluginJs)
+	mux.HandleFunc("/v2/js/data.json", httpDataJson2)
+	mux.HandleFunc("/v2/js/history.json", httpHistoryJson)
 
 	mux.HandleFunc("/config", httpConfig)
 
@@ -73,14 +74,19 @@ func httpDataJson(w http.ResponseWriter, r *http.Request) {
 	DataJson(u, w, r, true)
 }
 
+func httpJqueryPluginJs(w http.ResponseWriter, r *http.Request) {
+	u := uf(w, r)
+	JqueryPluginJs(u, w, r)
+}
+
 func httpDataJson2(w http.ResponseWriter, r *http.Request) {
 	u := uf(w, r)
 	DataJson(u, w, r, false)
 }
 
-func httpJqueryPluginJs(w http.ResponseWriter, r *http.Request) {
+func httpHistoryJson(w http.ResponseWriter, r *http.Request) {
 	u := uf(w, r)
-	JqueryPluginJs(u, w, r)
+	HistoryJson(u, w, r)
 }
 
 func httpConfig(w http.ResponseWriter, r *http.Request) {

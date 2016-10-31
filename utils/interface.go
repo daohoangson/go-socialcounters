@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net/http"
+	"time"
 )
 
 type Utils interface {
@@ -13,8 +14,8 @@ type Utils interface {
 	MemorySet(key string, value []byte, ttl int64) error
 	MemoryGet(key string) ([]byte, error)
 
-	DbSet(key string, hash map[string]string) error
-	DbGet(key string) (map[string]string, error)
+	HistorySave(service string, url string, count int64) error
+	HistoryLoad(url string) ([]HistoryRecord, error)
 
 	Errorf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -22,3 +23,10 @@ type Utils interface {
 }
 
 type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils
+
+type HistoryRecord struct {
+	Service string    `datastore:"service,noindex"`
+	Url     string    `datastore:"url"`
+	Count   int64     `datastore:"count,noindex"`
+	Time    time.Time `datastore:"time"`
+}

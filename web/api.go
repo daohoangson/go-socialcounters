@@ -82,6 +82,48 @@ func JqueryPluginJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 	writeJs(u, w, r, js)
 }
 
+func HistoryJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
+	requestedUrls := parseUrls(r)
+	url := requestedUrls[0]
+
+	records, err := u.HistoryLoad(url)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Errorf("web.HistoryJson: HistoryLoad error %v", err)
+		return
+	}
+
+	data := make(map[string]HistorySlot)
+	slotSize := int64(300) // each slot lasts 5 minutes
+	for _, record := range records {
+		slotInt64 := record.Time.Unix() / slotSize * slotSize
+		slotString := fmt.Sprintf("%d", slotInt64)
+
+		if slot, ok := data[slotString]; ok {
+			if _, ok := slot.Counts[record.Service]; !ok {
+				slot.Counts[record.Service] = record.Count
+				slot.Total += record.Count
+				data[slotString] = slot
+			}
+		} else {
+			data[slotString] = HistorySlot{
+				Time: time.Unix(slotInt64, 0).Format(time.RFC1123),
+				Counts: map[string]int64{record.Service: record.Count},
+				Total: record.Count,
+			}
+		}
+	}
+
+	historyJson, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Errorf("web.HistoryJson: json.Marshal error %v", err)
+		return
+	}
+
+	writeJson(u, w, r, string(historyJson))
+}
+
 func getAdsAsJson(u utils.Utils) string {
 	json, err := json.Marshal(u.ConfigGet("ADS"))
 	if err != nil {

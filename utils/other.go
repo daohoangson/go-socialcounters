@@ -51,11 +51,11 @@ func (u Other) MemoryGet(key string) ([]byte, error) {
 	return []byte(value), err
 }
 
-func (u Other) DbSet(key string, hash map[string]string) error {
+func (u Other) HistorySave(service string, url string, count int64) error {
 	return errors.New("Not implemented")
 }
 
-func (u Other) DbGet(key string) (map[string]string, error) {
+func (u Other) HistoryLoad(url string) ([]HistoryRecord, error) {
 	return nil, errors.New("Not implemented")
 }
 

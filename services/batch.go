@@ -60,16 +60,18 @@ func Batch(u utils.Utils, data *MapUrlServiceCount, ttl int64) {
 
 			req.Worker(u, &req)
 			for url, res := range req.Results {
-				(*data)[url][req.Service] = res.Count
-
-				if res.Error != nil {
-					u.Errorf("Error for %s on %s: %s", url, req.Service, res.Error)
-				}
-
 				cacheKey := getCacheKey(req.Service, url)
 				cacheValue := []byte(fmt.Sprintf("%d", res.Count))
 				cacheTtl := getCacheTtl(u, req, url, res)
 				u.MemorySet(cacheKey, cacheValue, cacheTtl)
+
+				(*data)[url][req.Service] = res.Count
+
+				if res.Error != nil {
+					u.Errorf("Error for %s on %s: %s", url, req.Service, res.Error)
+				} else {
+					u.HistorySave(req.Service, url, res.Count)
+				}
 			}
 		}(u, req)
 	}

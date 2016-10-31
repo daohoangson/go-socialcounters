@@ -16,10 +16,13 @@ import (
 
 var gaeConfigs = make(map[string]string)
 var gaeConfigDatastoreKind = "Config"
+
 type GaeConfig struct {
-    Value   string    `datastore:"value,noindex"`
-    Modifed time.Time `datastore:"modified,noindex"`
+	Value   string    `datastore:"value,noindex"`
+	Modifed time.Time `datastore:"modified,noindex"`
 }
+
+var gaeHistoryRecordKind = "HistoryRecord"
 
 type GAE struct {
 	context appengine.Context
@@ -48,12 +51,12 @@ func (u GAE) ConfigSet(key string, value string) error {
 
 	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
 	if _, err := datastore.Put(u.context, k, &e); err != nil {
-        return err
-    }
+		return err
+	}
 
-    gaeConfigs = make(map[string]string)
-    u.Infof("Saved config[%s] = %q", key, value)
-    return nil
+	gaeConfigs = make(map[string]string)
+	u.Infof("Saved config[%s] = %q", key, value)
+	return nil
 }
 
 func (u GAE) ConfigGet(key string) string {
@@ -72,7 +75,7 @@ func (u GAE) ConfigGet(key string) string {
 
 	var e GaeConfig
 	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
-	datastore.Get(u.context, k, &e);
+	datastore.Get(u.context, k, &e)
 
 	u.Infof("Loaded via datastore config[%s] = %q, modified = %s", key, e.Value, e.Modifed)
 	gaeConfigs[key] = e.Value
@@ -99,12 +102,42 @@ func (u GAE) MemoryGet(key string) ([]byte, error) {
 	return item.Value, nil
 }
 
-func (u GAE) DbSet(key string, hash map[string]string) error {
-	return errors.New("Not implemented")
+func (u GAE) HistorySave(service string, url string, count int64) error {
+	var r HistoryRecord
+	r.Service = service
+	r.Url = url
+	r.Count = count
+	r.Time = time.Now()
+
+	k := datastore.NewIncompleteKey(u.context, gaeHistoryRecordKind, nil)
+	if _, err := datastore.Put(u.context, k, &r); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (u GAE) DbGet(key string) (map[string]string, error) {
-	return nil, errors.New("Not implemented")
+func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
+	records := []HistoryRecord{}
+
+	q := datastore.NewQuery(gaeHistoryRecordKind).
+		Filter("url =", url).
+		Order("time")
+
+	for t := q.Run(u.context);; {
+		var r HistoryRecord
+		_, err := t.Next(&r)
+		if err == datastore.Done {
+			break
+		}
+		if err != nil {
+			return records, err 
+		}
+
+		records = append(records, r)
+	}
+
+	return records, nil
 }
 
 func (u GAE) Errorf(format string, args ...interface{}) {
