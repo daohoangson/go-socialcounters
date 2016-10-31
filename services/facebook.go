@@ -12,44 +12,39 @@ import (
 
 import neturl "net/url"
 
-func FacebookMulti(u utils.Utils, urls []string) ServiceResults {
+func facebookWorker(u utils.Utils, req *request) {
 	start := time.Now()
-	var results ServiceResults
-	results.Results = make(map[string]ServiceResult)
-
-	resp, err := u.HttpClient().Get(prepareFbGraphUrl(u, strings.Join(urls, ",")))
+	resp, err := u.HttpClient().Get(prepareFbGraphUrl(u, strings.Join(req.Urls, ",")))
 	if err != nil {
-		results.Error = err
-		return results
+		req.Error = err
+		return
 	}
 
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		results.Error = err
-		return results
+		req.Error = err
+		return
 	}
-	results.Response = respBody
-	u.Debugf("FacebookMulti(urls=%s) took %s: %s", strings.Join(urls, ", "), time.Since(start), respBody)
+	req.Response = respBody
+	u.Debugf("facebookWorker(urls=%s) took %s: %s", strings.Join(req.Urls, ", "), time.Since(start), respBody)
 
-	for _, url := range urls {
-		var result ServiceResult
-		result.Service = "Facebook"
-		result.Url = url
+	for _, url := range req.Urls {
+		var res result
 
 		if respUrl, _, _, err := jsonparser.Get(respBody, url); err != nil {
-			result.Error = err
+			res.Error = err
 		} else {
-			result.Response = respUrl
+			res.Response = respUrl
 			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err == nil {
-				result.Count = shareCount
+				res.Count = shareCount
 			}
 		}
 
-		results.Results[result.Url] = result
+		req.Results[url] = res
 	}
 
-	return results
+	return
 }
 
 func prepareFbGraphUrl(u utils.Utils, ids string) string {

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"io/ioutil"
 	"time"
 
@@ -10,38 +11,42 @@ import (
 
 import neturl "net/url"
 
-type twitterResponse struct {
-	Count float64
-	Url   string
+func twitterWorker(u utils.Utils, r *request) {
+	legacyBatch(u, r, twitterLegacy)
 }
 
-func Twitter(u utils.Utils, url string) ServiceResult {
+func twitterLegacy(u utils.Utils, url string) result {
 	start := time.Now()
-	var result ServiceResult
-	result.Service = "Twitter"
-	result.Url = url
+	var res result
 
 	resp, err := u.HttpClient().Get("https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url))
 	if err != nil {
-		result.Error = err
-		return result
+		res.Error = err
+		return res
 	}
 
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		result.Error = err
-		return result
+		res.Error = err
+		return res
 	}
-	result.Response = respBody
-	u.Debugf("Twitter(url=%s) took %s: %s", url, time.Since(start), respBody)
+	res.Response = respBody
+	u.Debugf("twitterLegacy(url=%s) took %s: %s", url, time.Since(start), respBody)
 
 	if count, err := jsonparser.GetInt(respBody, "count"); err != nil {
-		result.Error = err
-		return result
+		res.Error = err
+		return res
 	} else {
-		result.Count = count
+		if count == 0 {
+			if oscError, err := jsonparser.GetString(respBody, "error"); err != nil {
+				res.Error = errors.New(oscError)
+				return res
+			}
+		}
+
+		res.Count = count
 	}
 
-	return result
+	return res
 }
