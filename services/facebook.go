@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/daohoangson/go-socialcounters/utils"
@@ -12,6 +13,7 @@ import (
 import neturl "net/url"
 
 func FacebookMulti(u utils.Utils, urls []string) ServiceResults {
+	start := time.Now()
 	var results ServiceResults
 	results.Results = make(map[string]ServiceResult)
 
@@ -28,6 +30,7 @@ func FacebookMulti(u utils.Utils, urls []string) ServiceResults {
 		return results
 	}
 	results.Response = respBody
+	u.Debugf("FacebookMulti(urls=%s) took %s: %s", strings.Join(urls, ", "), time.Since(start), respBody)
 
 	for _, url := range urls {
 		var result ServiceResult

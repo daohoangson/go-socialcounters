@@ -138,19 +138,25 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 		serviceResults := services.Batch(u, requests)
 
 		for _, serviceResult := range serviceResults {
+			serviceResultTtl := ttl
 			dataMap[serviceResult.Url][serviceResult.Service] = serviceResult.Count
 
 			if serviceResult.Error != nil {
 				u.Errorf("Error for %s on %s: %s", serviceResult.Url, serviceResult.Service, serviceResult.Error)
-				u.Debugf("Response for %s on %s: %s", serviceResult.Url, serviceResult.Service, serviceResult.Response)
-			}
+			} else {
+				if serviceResult.Count == 0 {
+					serviceResultTtlRestricted := false
 
-			serviceResultTtl := ttl
-			if serviceResult.Count < 1 {
-				if ttlRestrictedEnv := u.ConfigGet("TTL_COUNT_EQUALS_ZERO"); ttlRestrictedEnv != "" {
-					if ttlRestricted, err := strconv.ParseInt(ttlRestrictedEnv, 10, 64); err == nil {
-						serviceResultTtl = ttlRestricted
-						u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
+					if ttlRestrictedEnv := u.ConfigGet("TTL_COUNT_EQUALS_ZERO"); ttlRestrictedEnv != "" {
+						if ttlRestricted, err := strconv.ParseInt(ttlRestrictedEnv, 10, 64); err == nil {
+							serviceResultTtl = ttlRestricted
+							serviceResultTtlRestricted = true
+							u.Infof("Restricted TTL for %s on %s: %d", serviceResult.Url, serviceResult.Service, serviceResultTtl)
+						}
+					}
+
+					if !serviceResultTtlRestricted {
+						u.Debugf("%s(%s).Count == 0 without TTL restriction", serviceResult.Service, serviceResult.Url)
 					}
 				}
 			}

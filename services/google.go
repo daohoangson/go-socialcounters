@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 func Google(u utils.Utils, url string) ServiceResult {
+	start := time.Now()
 	var result ServiceResult
 	result.Service = "Google"
 	result.Url = url
@@ -43,6 +45,7 @@ func Google(u utils.Utils, url string) ServiceResult {
 		return result
 	}
 	result.Response = respBody
+	u.Debugf("Google(url=%s) took %s: %s", url, time.Since(start), respBody)
 
 	jsonparser.ArrayEach(respBody, func(element []byte, _ jsonparser.ValueType, _ int, err error) {
 		if err != nil {

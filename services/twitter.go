@@ -2,6 +2,7 @@ package services
 
 import (
 	"io/ioutil"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/daohoangson/go-socialcounters/utils"
@@ -15,6 +16,7 @@ type twitterResponse struct {
 }
 
 func Twitter(u utils.Utils, url string) ServiceResult {
+	start := time.Now()
 	var result ServiceResult
 	result.Service = "Twitter"
 	result.Url = url
@@ -32,6 +34,7 @@ func Twitter(u utils.Utils, url string) ServiceResult {
 		return result
 	}
 	result.Response = respBody
+	u.Debugf("Twitter(url=%s) took %s: %s", url, time.Since(start), respBody)
 
 	if count, err := jsonparser.GetInt(respBody, "count"); err != nil {
 		result.Error = err
