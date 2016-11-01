@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>go-socialcounters &gt; History</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <style>
+        #chart-container {
+            overflow: hidden;
+        }
+
+        #chart {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-sm-12">
+            <div id="chart-container">
+                <div id="chart"></div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-12">
+            <form id="form">
+                <div class="form-group">
+                    <label for="url">Content URL</label>
+                    <input id="url" name="url" type="url"
+                           placeholder="https://content.domain.com/path/to/awesomeness.html"
+                           class="form-control" required aria-required="true"/>
+                </div>
+                <div id="urls" class="checkbox">
+                </div>
+                <button id="visualize" type="submit" class="btn btn-default" disabled aria-disabled="true">Visualize
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+    var chartOnLoad = function () {
+        document.getElementById('form').onsubmit = formOnSubmit;
+        document.getElementById('visualize').disabled = false;
+    };
+
+    var historyJsons = {};
+    var urlCheckboxes = {};
+    var chartDraw = function () {
+        var columns = [], data = {}, times = [];
+        columns.push('time');
+
+        for (var _url in historyJsons) {
+            if (!historyJsons.hasOwnProperty(_url)) {
+                continue;
+            }
+            var _historyJson = historyJsons[_url];
+
+            if (!urlCheckboxes[_url].checked) {
+                continue;
+            }
+
+            columns.push(_url);
+
+            for (var _time in _historyJson) {
+                if (!_historyJson.hasOwnProperty(_time)) {
+                    continue;
+                }
+                var _historyRecord = _historyJson[_time];
+                if (_historyRecord['total'] < 1) {
+                    continue;
+                }
+
+                if (typeof data[_time] === 'undefined') {
+                    times.push(_time);
+                    data[_time] = {'time': new Date(_time * 1000)};
+                }
+
+                data[_time][_url] = _historyRecord['total'];
+            }
+        }
+
+        if (columns.length < 2) {
+            // no url enabled, stop drawing
+            return;
+        }
+
+        var dataTable = new google.visualization.DataTable();
+        var commonPrefix = '';
+        columns.forEach(function (_column, _columnIndex) {
+            if (_columnIndex == 0) {
+                return;
+            }
+
+            if (commonPrefix === '') {
+                commonPrefix = _column;
+            }
+
+            commonPrefix = getCommonPrefix(commonPrefix, _column);
+        });
+
+        columns.forEach(function (_column, _columnIndex) {
+            if (_columnIndex == 0) {
+                dataTable.addColumn('datetime', _column);
+            } else {
+                if (commonPrefix.length < _column.length) {
+                    _column = _column.substr(commonPrefix.length);
+                }
+                dataTable.addColumn('number', _column);
+            }
+        });
+
+        times.sort();
+        times.forEach(function (_time) {
+            var _data = data[_time],
+                    row = [];
+
+            columns.forEach(function (_column) {
+                row.push(_data[_column]);
+            });
+
+            dataTable.addRow(row);
+        });
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart'));
+        var chartSize = Math.min(window.innerHeight, window.innerWidth);
+        var drawOptions = {
+            curveType: 'function',
+            legend: {
+                position: 'none'
+            },
+            height: chartSize,
+            pointSize: 2,
+            pointsVisible: true,
+            theme: 'maximized',
+            tooltip: {
+                isHtml: true
+            },
+            vAxis: {
+                format: 'short',
+                viewWindowMode: 'explicit',
+                viewWindow: {
+                    min: 0
+                }
+            }
+        };
+        chart.draw(dataTable, drawOptions);
+    };
+
+    var formOnSubmit = function (e) {
+        var url = document.getElementById('url'),
+                urlValue = url.value;
+        if (!urlValue) {
+            return;
+        }
+        url.value = '';
+        e.preventDefault();
+
+        if (typeof urlCheckboxes[urlValue] !== 'undefined') {
+            // this url has already been loaded, make sure the checkbox is checked
+            urlCheckboxes[urlValue].checked = true;
+            chartDraw();
+            return;
+        }
+
+        var urls = document.getElementById('urls'),
+                newLabel = document.createElement('label'),
+                newCheckbox = document.createElement('input'),
+                newA = document.createElement('a');
+        newCheckbox.checked = true;
+        newCheckbox.name = 'urls[]';
+        newCheckbox.onchange = chartDraw;
+        newCheckbox.type = 'checkbox';
+        newCheckbox.value = urlValue;
+        newA.href = urlValue;
+        newA.innerHTML = 'open';
+        newA.target = '_blank';
+        newLabel.appendChild(newCheckbox);
+        newLabel.appendChild(document.createTextNode(urlValue + ' ('));
+        newLabel.appendChild(newA);
+        newLabel.appendChild(document.createTextNode(')'));
+        urls.appendChild(newLabel);
+        urlCheckboxes[urlValue] = newCheckbox;
+
+        var historyJsonUrl = getApiServer() + '/v2/js/history.json?url=' + encodeURIComponent(urlValue);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', historyJsonUrl);
+        xhr.onload = function () {
+            if (xhr.status !== 200) {
+                return;
+            }
+
+            historyJsons[urlValue] = JSON.parse(xhr.responseText);
+            chartDraw();
+        };
+        xhr.send();
+    };
+
+    var apiServer = null;
+    var getApiServer = function () {
+        if (apiServer !== null) {
+            return apiServer;
+        }
+
+        // default to use this server
+        apiServer = getQueryParam('api_server', '/');
+
+        // clean up trailing / if any
+        apiServer = apiServer.replace(/\/+$/, '')
+
+        return apiServer;
+    };
+    var getQueryParam = function (paramName, defaultParamValue) {
+        var query = window.location.search.substring(1),
+                params = query.split("&");
+
+        var paramValue = defaultParamValue;
+        params.forEach(function (param) {
+            var pair = param.split("=");
+            if (decodeURIComponent(pair[0]) === paramName) {
+                paramValue = decodeURIComponent(pair[1]);
+                return false;
+            }
+        });
+
+
+        return paramValue;
+    };
+    var getCommonPrefix = function (s1, s2) {
+        var shorter = s1.length < s2.length ? s1 : s2;
+        for (var i = 0, l = shorter.length; i < l; i++) {
+            if (s1.charAt(i) == s2.charAt(i)) {
+                continue;
+            }
+
+            return shorter.substr(0, i);
+        }
+
+        return shorter;
+    };
+
+    google.charts.load('current', {'packages': ['corechart']});
+    google.charts.setOnLoadCallback(chartOnLoad);
+</script>
+</body>
+</html>

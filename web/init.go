@@ -17,6 +17,7 @@ func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 
 	fs := http.FileServer(httpFs{http.Dir("public")})
 	mux.Handle("/css/", fs)
+	mux.Handle("/html/", fs)
 	mux.Handle("/img/", fs)
 
 	mux.HandleFunc("/", httpRedirect)
