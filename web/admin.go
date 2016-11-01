@@ -63,6 +63,7 @@ func ConfigPost(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	RulesRefresh(u)
 	w.WriteHeader(http.StatusAccepted)
 }
 
