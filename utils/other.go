@@ -32,23 +32,23 @@ func (u Other) ConfigGet(key string) string {
 	return os.Getenv(key)
 }
 
-func (u Other) MemorySet(key string, value []byte, ttl int64) error {
+func (u Other) MemorySet(key string, value string, ttl int64) error {
 	conn := getMcConn(u)
 	if conn == nil {
 		return nil
 	}
 
-	return conn.Set(key, string(value), 0, 0, int(ttl))
+	return conn.Set(key, value, 0, 0, int(ttl))
 }
 
-func (u Other) MemoryGet(key string) ([]byte, error) {
+func (u Other) MemoryGet(key string) (string, error) {
 	conn := getMcConn(u)
 	if conn == nil {
-		return nil, errors.New("No memcache connection")
+		return "", errors.New("No memcache connection")
 	}
 
 	value, _, _, err := conn.Get(key)
-	return []byte(value), err
+	return value, err
 }
 
 func (u Other) HistorySave(service string, url string, count int64) error {
@@ -57,6 +57,10 @@ func (u Other) HistorySave(service string, url string, count int64) error {
 
 func (u Other) HistoryLoad(url string) ([]HistoryRecord, error) {
 	return nil, errors.New("Not implemented")
+}
+
+func (u Other) Schedule(task string, data interface{}, delay int64) error {
+	return errors.New("Not implemented")
 }
 
 func (u Other) Errorf(format string, args ...interface{}) {

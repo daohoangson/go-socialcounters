@@ -3,6 +3,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"appengine"
 	"appengine/datastore"
 	"appengine/memcache"
+	"appengine/taskqueue"
 	"appengine/urlfetch"
 )
 
@@ -83,23 +85,23 @@ func (u GAE) ConfigGet(key string) string {
 	return e.Value
 }
 
-func (u GAE) MemorySet(key string, value []byte, ttl int64) error {
+func (u GAE) MemorySet(key string, value string, ttl int64) error {
 	item := &memcache.Item{
 		Key:        key,
-		Value:      value,
+		Value:      []byte(value),
 		Expiration: time.Duration(ttl) * time.Second,
 	}
 
-	return memcache.Add(u.context, item)
+	return memcache.Set(u.context, item)
 }
 
-func (u GAE) MemoryGet(key string) ([]byte, error) {
+func (u GAE) MemoryGet(key string) (string, error) {
 	item, err := memcache.Get(u.context, key)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return item.Value, nil
+	return string(item.Value), nil
 }
 
 func (u GAE) HistorySave(service string, url string, count int64) error {
@@ -138,6 +140,24 @@ func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 	}
 
 	return records, nil
+}
+
+func (u GAE) Schedule(task string, data interface{}, delay int64) error {
+	json, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	t := taskqueue.Task{
+		Delay: time.Duration(delay) * time.Second,
+		Path: "/tasks/" + task,
+		Payload: json,
+	}
+	if _, err := taskqueue.Add(u.context, &t, ""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u GAE) Errorf(format string, args ...interface{}) {

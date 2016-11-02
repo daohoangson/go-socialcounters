@@ -11,11 +11,13 @@ type Utils interface {
 	ConfigSet(key string, value string) error
 	ConfigGet(key string) string
 
-	MemorySet(key string, value []byte, ttl int64) error
-	MemoryGet(key string) ([]byte, error)
+	MemorySet(key string, value string, ttl int64) error
+	MemoryGet(key string) (string, error)
 
 	HistorySave(service string, url string, count int64) error
 	HistoryLoad(url string) ([]HistoryRecord, error)
+
+	Schedule(task string, data interface{}, delay int64) error
 
 	Errorf(format string, args ...interface{})
 	Infof(format string, args ...interface{})

@@ -40,10 +40,8 @@ func parseTtl(u utils.Utils, r *http.Request) int64 {
 		}
 	}
 
-	if env := u.ConfigGet("TTL_DEFAULT"); env != "" {
-		if ttl, err := strconv.ParseInt(env, 10, 64); err == nil {
-			return ttl
-		}
+	if ttl, err := utils.ConfigGetInt(u, "TTL_DEFAULT"); err == nil {
+		return ttl
 	}
 
 	return 300

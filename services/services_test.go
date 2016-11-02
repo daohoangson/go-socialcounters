@@ -81,38 +81,24 @@ func TestBatch(t *testing.T) {
 	twitterUrl1 := "https://twitter.com"
 	twitterUrl2 := "http://opensharecount.com"
 
-	dataMap := MapUrlServiceCount{
-		facebookUrl1: MapServiceCount{
-			FacebookService: 0,
-		},
-		googleUrl1: MapServiceCount{
-			GoogleService: 0,
-		},
-		facebookUrl2: MapServiceCount{
-			FacebookService: 0,
-		},
-		twitterUrl1: MapServiceCount{
-			TwitterService: 0,
-		},
-		googleUrl2: MapServiceCount{
-			GoogleService: 0,
-		},
-		twitterUrl2: MapServiceCount{
-			TwitterService: 0,
-		},
+	mapping := map[string][]string{
+		SERVICE_FACEBOOK: []string{facebookUrl1, facebookUrl2},
+		SERVICE_GOOGLE:   []string{googleUrl1, googleUrl2},
+		SERVICE_TWITTER:  []string{twitterUrl1, twitterUrl2},
 	}
 
-	tests := map[string][]string{
-		FacebookService: []string{facebookUrl1, facebookUrl2},
-		GoogleService:   []string{googleUrl1, googleUrl2},
-		TwitterService:  []string{twitterUrl1, twitterUrl2},
-	}
-
-	Batch(u, &dataMap, 0)
-
-	for service, urls := range tests {
+	data := DataSetup()
+	for service, urls := range mapping {
 		for _, url := range urls {
-			if count, ok := dataMap[url][service]; !ok {
+			DataAdd(&data, service, url)
+		}
+	}
+
+	Batch(u, &data, 0)
+
+	for service, urls := range mapping {
+		for _, url := range urls {
+			if count, ok := data[url][service]; !ok {
 				t.Fatalf("Count(%s, %s) could not be found", service, url)
 			} else {
 				if count < 1 {

@@ -136,7 +136,7 @@ func getAdsAsJson(u utils.Utils) string {
 func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string, error) {
 	requestedUrls := parseUrls(r)
 	requestedServices := parseServices(r)
-	dataMap := make(services.MapUrlServiceCount)
+	data := services.DataSetup()
 
 	if len(requestedUrls) < 1 {
 		return "", "{}", nil
@@ -153,21 +153,20 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 			u.Errorf("Url not allowed %s", requestedUrl)
 			continue
 		}
-		dataMap[requestedUrl] = make(map[string]int64)
 
 		for _, requestedService := range requestedServices {
-			dataMap[requestedUrl][requestedService] = 0
+			services.DataAdd(&data, requestedService, requestedUrl)
 		}
 	}
 
-	services.Batch(u, &dataMap, parseTtl(u, r))
+	services.Batch(u, &data, parseTtl(u, r))
 
 	var dataByte []byte
 	var dataErr error
 	if oneUrl {
-		dataByte, dataErr = json.Marshal(dataMap[url])
+		dataByte, dataErr = json.Marshal(data[url])
 	} else {
-		dataByte, dataErr = json.Marshal(dataMap)
+		dataByte, dataErr = json.Marshal(data)
 	}
 	if dataErr != nil {
 		return url, "{}", dataErr
