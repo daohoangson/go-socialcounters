@@ -73,7 +73,7 @@ func TestTwitter(t *testing.T) {
 	testOne(t, twitterWorker, "https://twitter.com", int64(97000))
 }
 
-func TestBatch(t *testing.T) {
+func TestFillData(t *testing.T) {
 	facebookUrl1 := "https://facebook.com"
 	facebookUrl2 := "https://developers.facebook.com"
 	googleUrl1 := "https://google.com"
@@ -94,7 +94,7 @@ func TestBatch(t *testing.T) {
 		}
 	}
 
-	Batch(u, &data, 0)
+	FillData(u, &data)
 
 	for service, urls := range mapping {
 		for _, url := range urls {

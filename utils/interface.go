@@ -17,7 +17,7 @@ type Utils interface {
 	HistorySave(service string, url string, count int64) error
 	HistoryLoad(url string) ([]HistoryRecord, error)
 
-	Schedule(task string, data interface{}, delay int64) error
+	Schedule(task string, data interface{}) error
 
 	Errorf(format string, args ...interface{})
 	Infof(format string, args ...interface{})

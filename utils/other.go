@@ -59,7 +59,7 @@ func (u Other) HistoryLoad(url string) ([]HistoryRecord, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (u Other) Schedule(task string, data interface{}, delay int64) error {
+func (u Other) Schedule(task string, data interface{}) error {
 	return errors.New("Not implemented")
 }
 

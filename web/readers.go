@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-
-	"github.com/daohoangson/go-socialcounters/utils"
 )
 
 func parseShortenAsBool(r *http.Request) string {
@@ -30,21 +27,6 @@ func parseTargetAsJson(r *http.Request) string {
 	}
 
 	return target
-}
-
-func parseTtl(u utils.Utils, r *http.Request) int64 {
-	q := r.URL.Query()
-	if ttls, ok := q["ttl"]; ok {
-		if ttl, err := strconv.ParseInt(ttls[0], 10, 64); err == nil {
-			return ttl
-		}
-	}
-
-	if ttl, err := utils.ConfigGetInt(u, "TTL_DEFAULT"); err == nil {
-		return ttl
-	}
-
-	return 300
 }
 
 func parseUrls(r *http.Request) []string {

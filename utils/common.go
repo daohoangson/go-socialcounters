@@ -16,3 +16,23 @@ func ConfigGetInt(u Utils, key string) (int64, error) {
 
 	return 0, errors.New("Not yet configured")
 }
+
+func ConfigGetIntWithDefault(u Utils, key string, valueDefault int64) int64 {
+	if value, err := ConfigGetInt(u, key); err == nil {
+		return value
+	}
+
+	return valueDefault
+}
+
+func ConfigGetTtlDefault(u Utils) int64 {
+	return ConfigGetIntWithDefault(u, "TTL_DEFAULT", 300)
+}
+
+func Verbosef(u Utils, format string, args ...interface{}) {
+	if ConfigGetIntWithDefault(u, "VERBOSE", 0) < 1 {
+		return
+	}
+
+	u.Debugf(format, args...)
+}

@@ -9,14 +9,14 @@ import (
 )
 
 func TaskRefresh(u utils.Utils, w http.ResponseWriter, r *http.Request) {
-	dataMap := make(services.MapUrlServiceCount)
+	data := make(services.MapUrlServiceCount)
 	decoder := json.NewDecoder(r.Body)
 
-	if err := decoder.Decode(&dataMap); err != nil {
+	if err := decoder.Decode(&data); err != nil {
 		u.Errorf("web.TaskRefresh: decoder.Decode error %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	services.Refresh(u, &dataMap, parseTtl(u, r))
+	services.Refresh(u, &data)
 }

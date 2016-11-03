@@ -142,14 +142,13 @@ func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 	return records, nil
 }
 
-func (u GAE) Schedule(task string, data interface{}, delay int64) error {
+func (u GAE) Schedule(task string, data interface{}) error {
 	json, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
 	t := taskqueue.Task{
-		Delay: time.Duration(delay) * time.Second,
 		Path: "/tasks/" + task,
 		Payload: json,
 	}

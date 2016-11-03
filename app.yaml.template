@@ -1,5 +1,5 @@
 application: go-socialcounters
-version: 6
+version: 7
 runtime: go
 api_version: go1
 
@@ -7,11 +7,14 @@ env_variables:
   ADS: ''
   WHITELIST: ''
   BLACKLIST: ''
-  TTL_DEFAULT: 300
-  TTL_COUNT_EQUALS_ZERO: 60
-  TTL_NEEDS_REFRESH: 5
   FACEBOOK_APP_ID: ''
   FACEBOOK_APP_SECRET: ''
+  TTL_MEMORY: 86400
+  TTL_DEFAULT: 300
+  TTL_RESTRICTED: 60
+  REFRESH_TTL_LEFT_THRESHOLD: 10
+  REFRESH_BATCH_SIZE: 20
+  VERBOSE: 0
 
 handlers:
 - url: /.*

@@ -159,7 +159,7 @@ func getCountsJson(u utils.Utils, r *http.Request, oneUrl bool) (string, string,
 		}
 	}
 
-	services.Batch(u, &data, parseTtl(u, r))
+	services.FillData(u, &data)
 
 	var dataByte []byte
 	var dataErr error
