@@ -41,7 +41,8 @@ func facebookWorker(u utils.Utils, req *request) {
 		} else {
 			res.Response = respUrl
 			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err != nil {
-				res.Error = err
+				// it's alright, for new urls Facebook does not return share.share_count at all
+				res.Count = COUNT_INITIAL_VALUE
 			} else {
 				res.Count = shareCount
 			}
@@ -54,12 +55,14 @@ func facebookWorker(u utils.Utils, req *request) {
 }
 
 func prepareFbGraphUrl(u utils.Utils, ids string) string {
+	scheme := "http"
 	accessToken := ""
 	if appId := u.ConfigGet("FACEBOOK_APP_ID"); appId != "" {
 		if appSecret := u.ConfigGet("FACEBOOK_APP_SECRET"); appSecret != "" {
+			scheme = "https"
 			accessToken = fmt.Sprintf("&access_token=%s|%s", appId, appSecret)
 		}
 	}
 
-	return fmt.Sprintf("http://graph.facebook.com/?ids=%s&fields=share%s", neturl.QueryEscape(ids), accessToken)
+	return fmt.Sprintf("%s://graph.facebook.com/?ids=%s&fields=share%s", scheme, neturl.QueryEscape(ids), accessToken)
 }
