@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>go-socialcounters &gt; Config</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+</head>
+
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-offset-2 col-md-8 col-sm-12">
+            <form id="form">
+                <div class="form-group">
+                    <label for="secret">Secret</label>
+                    <input id="secret" name="secret" type="password"
+                           class="form-control" required aria-required="true"/>
+                </div>
+                <div id="configs"></div>
+                <button id="update" type="submit" class="btn btn-default">Update</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var configKeys = [
+        'ADS',
+        'WHITELIST',
+        'BLACKLIST',
+        'FACEBOOK_APP_ID',
+        'FACEBOOK_APP_SECRET',
+        'TTL_MEMORY',
+        'TTL_DEFAULT',
+        'TTL_RESTRICTED',
+        'REFRESH_TTL_LEFT_THRESHOLD',
+        'REFRESH_BATCH_SIZE',
+        'VERBOSE'
+    ];
+    var configObj = null;
+
+    var init = function () {
+        document.getElementById('form').onsubmit = formOnSubmit;
+        document.getElementById('secret').value = getQueryParam('secret');
+    };
+
+    var formOnSubmit = function (e) {
+        var secret = document.getElementById('secret'),
+                secretValue = secret.value;
+        if (!secretValue) {
+            return;
+        }
+        e.preventDefault();
+
+        if (configObj === null) {
+            loadJsonObj(secretValue);
+        } else {
+            confirmChanges(secretValue);
+        }
+    };
+
+    var loadJsonObj = function (secretValue) {
+        var configs = document.getElementById('configs'),
+                configUrl = getConfigUrl(secretValue);
+        configObj = {};
+        configs.innerHTML = '';
+        configKeys.forEach(function (configKey) {
+            configUrl += '&key=' + configKey;
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', configUrl);
+        xhr.onload = function () {
+            if (xhr.status !== 200) {
+                return;
+            }
+
+            configObj = JSON.parse(xhr.responseText);
+            var configsHtml = '';
+            configKeys.forEach(function (configKey) {
+                configsHtml += '<div class="form-group">';
+                configsHtml += '<label for="' + configKey + '">' + configKey + '</label>';
+                configsHtml += '<input class="form-control" id="' + configKey + '">';
+                configsHtml += '</div>';
+            });
+
+            configs.innerHTML = configsHtml;
+
+            configKeys.forEach(function (configKey) {
+                var config = document.getElementById(configKey),
+                        configValue = configObj[configKey];
+
+                config.value = configValue;
+                config.placeholder = configValue;
+            });
+        };
+        xhr.send();
+    };
+
+    var confirmChanges = function (secretValue) {
+        var changes = {};
+        var hasChanges = false;
+
+        configKeys.forEach(function (configKey) {
+            var config = document.getElementById(configKey),
+                    configValue = configObj[configKey];
+
+            var inputValue = configValue;
+            if (config) {
+                inputValue = config.value;
+            }
+
+            if (inputValue != configValue) {
+                changes[configKey] = inputValue;
+                hasChanges = true;
+            }
+        });
+
+        if (!hasChanges) {
+            alert('No changes');
+            return;
+        }
+
+        var changesText = '';
+        var xhrBody = '';
+        for (var configKey in changes) {
+            if (!changes.hasOwnProperty(configKey)) {
+                continue;
+            }
+            changesText += configKey + ': ' + changes[configKey] + '\n';
+            xhrBody += 'key=' + configKey + '&' + configKey + '=' + encodeURIComponent(changes[configKey]) + '&';
+        }
+        if (!confirm('Please confirm your changes: \n\n' + changesText)) {
+            return;
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', getConfigUrl(secretValue), true);
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            if (xhr.status === 202) {
+                alert('Update ok');
+            } else {
+                alert('Update failed');
+            }
+        };
+        xhr.send(xhrBody);
+    };
+
+    var apiServer = null;
+    var getApiServer = function () {
+        if (apiServer !== null) {
+            return apiServer;
+        }
+
+        // default to use this server
+        apiServer = getQueryParam('api_server', '/');
+
+        // clean up trailing / if any
+        apiServer = apiServer.replace(/\/+$/, '');
+
+        return apiServer;
+    };
+    var getQueryParam = function (paramName, defaultParamValue) {
+        var query = window.location.search.substring(1),
+                params = query.split("&");
+
+        var paramValue = defaultParamValue;
+        params.forEach(function (param) {
+            var pair = param.split("=");
+            if (decodeURIComponent(pair[0]) === paramName) {
+                paramValue = decodeURIComponent(pair[1]);
+                return false;
+            }
+        });
+
+
+        return paramValue;
+    };
+    var getConfigUrl = function (secretValue) {
+        return getApiServer() + '/config?secret=' + encodeURIComponent(secretValue);
+    };
+
+    init();
+</script>
+</body>
+</html>
