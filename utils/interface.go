@@ -28,7 +28,7 @@ type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils
 
 type HistoryRecord struct {
 	Service string    `datastore:"service,noindex"`
-	Url     string    `datastore:"url"`
+	Url     string    `datastore:"url,noindex"`
 	Count   int64     `datastore:"count,noindex"`
-	Time    time.Time `datastore:"time"`
+	Time    time.Time `datastore:"time,noindex"`
 }

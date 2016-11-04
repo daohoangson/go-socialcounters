@@ -17,14 +17,14 @@ import (
 )
 
 var gaeConfigs = make(map[string]string)
-var gaeConfigDatastoreKind = "Config"
+
+const GAE_DATASTORE_KIND_CONFIG = "Config"
+const GAE_DATASTORE_KIND_HISTORY_RECORD = "HistoryRecord"
 
 type GaeConfig struct {
 	Value   string    `datastore:"value,noindex"`
 	Modifed time.Time `datastore:"modified,noindex"`
 }
-
-var gaeHistoryRecordKind = "HistoryRecord"
 
 type GAE struct {
 	context appengine.Context
@@ -51,7 +51,7 @@ func (u GAE) ConfigSet(key string, value string) error {
 	e.Value = value
 	e.Modifed = time.Now()
 
-	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
+	k := datastore.NewKey(u.context, GAE_DATASTORE_KIND_CONFIG, key, 0, nil)
 	if _, err := datastore.Put(u.context, k, &e); err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (u GAE) ConfigGet(key string) string {
 	}
 
 	var e GaeConfig
-	k := datastore.NewKey(u.context, gaeConfigDatastoreKind, key, 0, nil)
+	k := datastore.NewKey(u.context, GAE_DATASTORE_KIND_CONFIG, key, 0, nil)
 	datastore.Get(u.context, k, &e)
 
 	u.Infof("Loaded via datastore config[%s] = %q, modified = %s", key, e.Value, e.Modifed)
@@ -111,7 +111,7 @@ func (u GAE) HistorySave(service string, url string, count int64) error {
 	r.Count = count
 	r.Time = time.Now()
 
-	k := datastore.NewIncompleteKey(u.context, gaeHistoryRecordKind, nil)
+	k := datastore.NewIncompleteKey(u.context, GAE_DATASTORE_KIND_HISTORY_RECORD, nil)
 	if _, err := datastore.Put(u.context, k, &r); err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (u GAE) HistorySave(service string, url string, count int64) error {
 func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 	records := []HistoryRecord{}
 
-	q := datastore.NewQuery(gaeHistoryRecordKind).
+	q := datastore.NewQuery(GAE_DATASTORE_KIND_HISTORY_RECORD).
 		Filter("url =", url).
 		Order("time")
 

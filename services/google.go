@@ -33,6 +33,7 @@ func googleLegacy(u utils.Utils, url string) result {
 		return res
 	}
 
+	utils.Verbosef(u, "Calling http.Client.Do(body=%s)", body)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := u.HttpClient().Do(req)
 	if err != nil {
@@ -47,7 +48,7 @@ func googleLegacy(u utils.Utils, url string) result {
 		return res
 	}
 	res.Response = respBody
-	u.Debugf("googleLegacy(url=%s) took %s: %s", url, time.Since(start), respBody)
+	u.Debugf("googleLegacy(url=%s) took %s", url, time.Since(start))
 
 	jsonparser.ArrayEach(respBody, func(element []byte, _ jsonparser.ValueType, _ int, err error) {
 		if err != nil {

@@ -16,10 +16,12 @@ func twitterWorker(u utils.Utils, r *request) {
 }
 
 func twitterLegacy(u utils.Utils, url string) result {
-	start := time.Now()
 	var res result
+	start := time.Now()
+	oscUrl := "https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url)
+	utils.Verbosef(u, "Calling http.Client.Get(%s)", oscUrl)
 
-	resp, err := u.HttpClient().Get("https://opensharecount.com/count.json?url=" + neturl.QueryEscape(url))
+	resp, err := u.HttpClient().Get(oscUrl)
 	if err != nil {
 		res.Error = err
 		return res
@@ -32,7 +34,7 @@ func twitterLegacy(u utils.Utils, url string) result {
 		return res
 	}
 	res.Response = respBody
-	u.Debugf("twitterLegacy(url=%s) took %s: %s", url, time.Since(start), respBody)
+	u.Debugf("twitterLegacy(url=%s) took %s", url, time.Since(start))
 
 	if count, err := jsonparser.GetInt(respBody, "count"); err != nil {
 		res.Error = err
