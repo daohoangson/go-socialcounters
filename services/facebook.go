@@ -37,9 +37,12 @@ func facebookWorker(u utils.Utils, req *request) {
 
 		if respUrl, _, _, err := jsonparser.Get(respBody, url); err != nil {
 			res.Error = err
+			res.Response = respBody
 		} else {
 			res.Response = respUrl
-			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err == nil {
+			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err != nil {
+				res.Error = err
+			} else {
 				res.Count = shareCount
 			}
 		}

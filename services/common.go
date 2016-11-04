@@ -153,7 +153,7 @@ func executeRequests(u utils.Utils, requests *MapServiceRequest, data *MapUrlSer
 				(*data)[url][req.Service] = res.Count
 
 				if res.Error != nil {
-					u.Errorf("services.%s: %s error %v", req.Service, url, res.Error)
+					u.Errorf("services.%s: %s error %v response %s", req.Service, url, res.Error, res.Response)
 				} else {
 					if res.Count > COUNT_INITIAL_VALUE && res.Count > oldCount {
 						cacheWg.Add(1)
