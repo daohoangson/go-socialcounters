@@ -85,34 +85,64 @@ func (u GAE) ConfigGet(key string) string {
 	return e.Value
 }
 
-func (u GAE) MemorySet(key string, value string, ttl int64) error {
-	item := &memcache.Item{
-		Key:        key,
-		Value:      []byte(value),
-		Expiration: time.Duration(ttl) * time.Second,
+func (u GAE) MemorySet(items *[]MemoryItem) error {
+	if items == nil || len(*items) < 1 {
+		return nil
 	}
 
-	return memcache.Set(u.context, item)
+	gaeItems := make([]*memcache.Item, len(*items))
+	for index, item := range *items {
+		gaeItems[index] = &memcache.Item{
+			Key:        item.Key,
+			Value:      []byte(item.Value),
+			Expiration: time.Duration(item.Ttl) * time.Second,
+		}
+
+		Verbosef(u, "GAE.MemorySet item[%d] = %v", index, item)
+	}
+
+	return memcache.SetMulti(u.context, gaeItems)
 }
 
-func (u GAE) MemoryGet(key string) (string, error) {
-	item, err := memcache.Get(u.context, key)
+func (u GAE) MemoryGet(items *[]MemoryItem) error {
+	if items == nil || len(*items) < 1 {
+		return nil
+	}
+
+	keys := make([]string, len(*items))
+	for index, item := range *items {
+		keys[index] = item.Key
+	}
+
+	gaeItems, err := memcache.GetMulti(u.context, keys)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(item.Value), nil
+	for index, item := range *items {
+		if gaeItem, ok := gaeItems[item.Key]; ok {
+			(*items)[index].Value = string(gaeItem.Value)
+		}
+	}
+
+	return nil
 }
 
-func (u GAE) HistorySave(service string, url string, count int64) error {
-	var r HistoryRecord
-	r.Service = service
-	r.Url = url
-	r.Count = count
-	r.Time = time.Now()
+func (u GAE) HistorySave(records *[]HistoryRecord) error {
+	if records == nil || len(*records) < 1 {
+		return nil
+	}
 
-	k := datastore.NewIncompleteKey(u.context, GAE_DATASTORE_KIND_HISTORY_RECORD, nil)
-	if _, err := datastore.Put(u.context, k, &r); err != nil {
+	keys := make([]*datastore.Key, len(*records))
+	src := make([]*HistoryRecord, len(*records))
+	for index, _ := range *records {
+		keys[index] = datastore.NewIncompleteKey(u.context, GAE_DATASTORE_KIND_HISTORY_RECORD, nil)
+		src[index] = &(*records)[index]
+
+		Verbosef(u, "GAE.HistorySave src[%d] = %v", index, src[index])
+	}
+
+	if _, err := datastore.PutMulti(u.context, keys, src); err != nil {
 		return err
 	}
 
@@ -126,14 +156,14 @@ func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 		Filter("url =", url).
 		Order("time")
 
-	for t := q.Run(u.context);; {
+	for t := q.Run(u.context); ; {
 		var r HistoryRecord
 		_, err := t.Next(&r)
 		if err == datastore.Done {
 			break
 		}
 		if err != nil {
-			return records, err 
+			return records, err
 		}
 
 		records = append(records, r)
@@ -149,7 +179,7 @@ func (u GAE) Schedule(task string, data interface{}) error {
 	}
 
 	t := taskqueue.Task{
-		Path: "/tasks/" + task,
+		Path:    "/tasks/" + task,
 		Payload: json,
 	}
 	if _, err := taskqueue.Add(u.context, &t, ""); err != nil {

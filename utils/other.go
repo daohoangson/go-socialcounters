@@ -32,26 +32,39 @@ func (u Other) ConfigGet(key string) string {
 	return os.Getenv(key)
 }
 
-func (u Other) MemorySet(key string, value string, ttl int64) error {
+func (u Other) MemorySet(items *[]MemoryItem) error {
 	conn := getMcConn(u)
 	if conn == nil {
-		return nil
+		return errors.New("No memcache connection")
 	}
 
-	return conn.Set(key, value, 0, 0, int(ttl))
+	for _, item := range *items {
+		if err := conn.Set(item.Key, item.Value, 0, 0, int(item.Ttl)); err != nil {
+			u.Errorf("conn.Set(%s) error %v", item.Key, err)
+		}
+	}
+
+	return nil
 }
 
-func (u Other) MemoryGet(key string) (string, error) {
+func (u Other) MemoryGet(items *[]MemoryItem) error {
 	conn := getMcConn(u)
 	if conn == nil {
-		return "", errors.New("No memcache connection")
+		return errors.New("No memcache connection")
 	}
 
-	value, _, _, err := conn.Get(key)
-	return value, err
+	for index, item := range *items {
+		if value, _, _, err := conn.Get(item.Key); err != nil {
+			u.Errorf("conn.Get(%s) error %v", item.Key, err)
+		} else {
+			(*items)[index].Value = value
+		}
+	}
+
+	return nil
 }
 
-func (u Other) HistorySave(service string, url string, count int64) error {
+func (u Other) HistorySave(records *[]HistoryRecord) error {
 	return errors.New("Not implemented")
 }
 

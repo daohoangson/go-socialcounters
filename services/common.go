@@ -49,30 +49,39 @@ func FillData(u utils.Utils, data *MapUrlServiceCount) {
 }
 
 func Refresh(u utils.Utils, data *MapUrlServiceCount) {
-	utils.Verbosef(u, "service.Refresh(%s)", data)
-
 	requests := buildRequests(u, data, false)
 	executeRequests(u, &requests, data)
 }
 
 func fillDataFromCache(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bool) {
+	caches := make(sliceCache, 0)
+
 	for url, services := range *data {
 		for service, count := range services {
 			if handleNoValueOnly && count != COUNT_NO_VALUE {
 				continue
 			}
 
-			if count, ttlLeft, err := getCache(u, getCacheKey(service, url)); err == nil {
-				(*data)[url][service] = count
-				trackDataNeedRefresh(u, service, url, count, ttlLeft)
-				continue
-			}
+			caches = append(caches, cache{Service: service, Url: url, Count: COUNT_NO_VALUE})
 		}
+	}
+
+	if err := getCaches(u, &caches); err != nil {
+		u.Errorf("services.getCaches(%d) error %v", len(caches), err)
+	} else {
+		for _, cache := range caches {
+			(*data)[cache.Url][cache.Service] = cache.Count
+		}
+
+		checkCachesForRefresh(u, &caches)
 	}
 }
 
 func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bool) MapServiceRequest {
+	utils.Verbosef(u, "services.buildRequests(%s, %s)", data, handleNoValueOnly)
+
 	requests := make(MapServiceRequest)
+	caches := make(sliceCache, 0)
 
 	for url, services := range *data {
 		for service, count := range services {
@@ -92,7 +101,7 @@ func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bo
 			if temporaryCount == COUNT_NO_VALUE {
 				temporaryCount = COUNT_INITIAL_VALUE
 			}
-			setCache(u, getCacheKey(service, url), temporaryCount)
+			caches = append(caches, cache{Service: service, Url: url, Count: temporaryCount})
 
 			if req, ok := requests[service]; ok {
 				req.Urls = append(req.Urls, url)
@@ -109,57 +118,107 @@ func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bo
 		}
 	}
 
+	setCaches(u, &caches)
+
 	return requests
 }
 
 func executeRequests(u utils.Utils, requests *MapServiceRequest, data *MapUrlServiceCount) {
+	utils.Verbosef(u, "services.executeRequests(%s)", requests)
+	if len(*requests) < 1 {
+		return
+	}
+
 	var wg sync.WaitGroup
+	var cacheWg sync.WaitGroup
+	cacheCh := make(chan cache, 1)
+	caches := make(sliceCache, 0)
+	var historyWg sync.WaitGroup
+	historyTime := time.Now()
+	historyCh := make(chan utils.HistoryRecord, 1)
+	histories := make([]utils.HistoryRecord, 0)
+
+	wg.Add(len(*requests))
 	for _, req := range *requests {
-		wg.Add(1)
 		go func(req request) {
 			defer wg.Done()
 
 			req.Worker(u, &req)
-			for url, res := range req.Results {
-				cacheKey := getCacheKey(req.Service, url)
-				setCache(u, cacheKey, res.Count)
+			if req.Error != nil {
+				u.Errorf("services.%s: %v", req.Service, req.Error)
+			}
 
+			for url, res := range req.Results {
 				oldCount, _ := (*data)[url][req.Service]
 				(*data)[url][req.Service] = res.Count
 
 				if res.Error != nil {
-					u.Errorf("services.executeRequests: %s on %s: %v", url, req.Service, res.Error)
+					u.Errorf("services.%s: %s error %v", req.Service, url, res.Error)
 				} else {
-					if res.Count > oldCount {
-						u.HistorySave(req.Service, url, res.Count)
+					if res.Count > COUNT_INITIAL_VALUE && res.Count > oldCount {
+						cacheWg.Add(1)
+						cacheCh <- cache{Service: req.Service, Url: url, Count: res.Count}
+
+						historyWg.Add(1)
+						historyCh <- utils.HistoryRecord{Service: req.Service, Url: url, Count: res.Count, Time: historyTime}
 					}
 				}
 			}
 		}(req)
 	}
 
+	go func() {
+		for cache := range cacheCh {
+			caches = append(caches, cache)
+			cacheWg.Done()
+		}
+	}()
+
+	go func() {
+		for history := range historyCh {
+			histories = append(histories, history)
+			historyWg.Done()
+		}
+	}()
+
 	wg.Wait()
+	cacheWg.Wait()
+	historyWg.Wait()
+
+	setCaches(u, &caches)
+	u.HistorySave(&histories)
 }
 
-func trackDataNeedRefresh(u utils.Utils, service string, url string, cacheCount int64, cacheTtlLeft int64) {
-	if cacheTtlLeft > utils.ConfigGetIntWithDefault(u, "REFRESH_TTL_LEFT_THRESHOLD", 10) {
-		return
+func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
+	newCaches := make(sliceCache, 0)
+	ttlLeftThreshold := utils.ConfigGetIntWithDefault(u, "REFRESH_TTL_LEFT_THRESHOLD", 10)
+
+	for _, c := range *caches {
+		if c.TtlLeft > ttlLeftThreshold {
+			continue
+		}
+
+		if c.Count < COUNT_INITIAL_VALUE {
+			continue
+		}
+
+		if dataNeedRefresh == nil {
+			newData := make(MapUrlServiceCount)
+			dataNeedRefresh = &newData
+		}
+		DataAdd(dataNeedRefresh, c.Service, c.Url)
+		(*dataNeedRefresh)[c.Url][c.Service] = c.Count
+
+		// intentionally do not count unique url because if one url got flagged
+		// multiple times, it should be refreshed anyway
+		dataNeedRefreshCount++
+
+		// temporary mark the cached count as fresh to avoid other process
+		// also trying to refresh it, we will take care of it later
+		newCaches = append(newCaches, cache{Service: c.Service, Url: c.Url, Count: c.Count})
 	}
 
-	if dataNeedRefresh == nil {
-		newData := make(MapUrlServiceCount)
-		dataNeedRefresh = &newData
-	}
-	DataAdd(dataNeedRefresh, service, url)
-	(*dataNeedRefresh)[url][service] = cacheCount
-
-	// intentionally do not count unique url because if one url got flagged
-	// multiple times, it should be refreshed anyway
-	dataNeedRefreshCount++
-
-	// temporary mark the cached count as fresh to avoid other process
-	// also trying to refresh it, we will take care of it later
-	setCache(u, getCacheKey(service, url), cacheCount)
+	setCaches(u, &newCaches)
 }
 
 func scheduleRefreshIfNeeded(u utils.Utils) {
@@ -176,50 +235,74 @@ func scheduleRefreshIfNeeded(u utils.Utils) {
 	dataNeedRefreshCount = 0
 }
 
-func getCacheKey(service string, url string) string {
-	return fmt.Sprintf("%s/%s", service, url)
+func getCacheKey(c cache) string {
+	return fmt.Sprintf("%s/%s", c.Service, c.Url)
 }
 
-func setCache(u utils.Utils, key string, count int64) error {
-	ttl := utils.ConfigGetTtlDefault(u)
-	if count < 1 {
-		ttl = utils.ConfigGetIntWithDefault(u, "TTL_RESTRICTED", 60)
+func setCaches(u utils.Utils, caches *sliceCache) error {
+	if caches == nil || len(*caches) < 1 {
+		return nil
 	}
-	value := fmt.Sprintf("%d;%d", count, time.Now().Unix() + ttl)
+
+	items := make([]utils.MemoryItem, len(*caches))
 	ttlMemory := utils.ConfigGetIntWithDefault(u, "TTL_MEMORY", 86400)
+	ttlDefault := utils.ConfigGetTtlDefault(u)
+	ttlRestricted := utils.ConfigGetIntWithDefault(u, "TTL_RESTRICTED", 60)
 
-	utils.Verbosef(u, "u.MemorySet(%s, %s, %d)", key, value, ttlMemory)
-
-	return u.MemorySet(key, value, ttlMemory)
-}
-
-func getCache(u utils.Utils, key string) (int64, int64, error) {
-	count := int64(0)
-	ttlLeft := int64(0)
-	var e error
-
-	if value, err := u.MemoryGet(key); err != nil {
-		e = err
-	} else {
-		parts := strings.Split(value, ";")
-
-		if parsed, err := strconv.ParseInt(parts[0], 10, 64); err != nil {
-			e = err
-		} else {
-			count = parsed
+	for index, cache := range *caches {
+		valueTtl := ttlDefault
+		if cache.Count < 1 {
+			valueTtl = ttlRestricted
 		}
 
-		if e == nil && len(parts) >= 2 {
+		items[index] = utils.MemoryItem{
+			Key:   getCacheKey(cache),
+			Value: fmt.Sprintf("%d;%d", cache.Count, time.Now().Unix()+valueTtl),
+			Ttl:   ttlMemory,
+		}
+	}
+
+	if err := u.MemorySet(&items); err != nil {
+		u.Errorf("u.MemorySet(%d) error %v", len(items), err)
+	}
+
+	return nil
+}
+
+func getCaches(u utils.Utils, caches *sliceCache) error {
+	if caches == nil || len(*caches) < 1 {
+		return nil
+	}
+
+	items := make([]utils.MemoryItem, len(*caches))
+
+	for index, cache := range *caches {
+		items[index] = utils.MemoryItem{Key: getCacheKey(cache)}
+	}
+
+	if err := u.MemoryGet(&items); err != nil {
+		u.Errorf("u.MemoryGet(%d) error %v", len(items), err)
+		return err
+	}
+
+	for index, item := range items {
+		parts := strings.Split(item.Value, ";")
+
+		if count, err := strconv.ParseInt(parts[0], 10, 64); err == nil {
+			(*caches)[index].Count = count
+		}
+
+		if len(parts) >= 2 {
 			// value with expire timestamp
 			if exp, expErr := strconv.ParseInt(parts[1], 10, 64); expErr == nil {
-				ttlLeft = exp - time.Now().Unix()
+				(*caches)[index].TtlLeft = exp - time.Now().Unix()
 			}
 		}
+
+		utils.Verbosef(u, "services.getCaches caches[%d] = %v", index, &(*caches)[index])
 	}
 
-	utils.Verbosef(u, "u.MemoryGet(%s) = (%d, %d, %v)", key, count, ttlLeft, e)
-
-	return count, ttlLeft, e
+	return nil
 }
 
 func legacyBatch(u utils.Utils, req *request, f workerLegacy) {

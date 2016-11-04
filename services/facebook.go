@@ -30,7 +30,7 @@ func facebookWorker(u utils.Utils, req *request) {
 		return
 	}
 	req.Response = respBody
-	u.Debugf("facebookWorker(urls=%s) took %s", len(req.Urls), time.Since(start))
+	u.Debugf("facebookWorker(urls=%d) took %s", len(req.Urls), time.Since(start))
 
 	for _, url := range req.Urls {
 		var res result
@@ -58,5 +58,5 @@ func prepareFbGraphUrl(u utils.Utils, ids string) string {
 		}
 	}
 
-	return fmt.Sprintf("https://graph.facebook.com/?ids=%s&fields=share%s", neturl.QueryEscape(ids), accessToken)
+	return fmt.Sprintf("http://graph.facebook.com/?ids=%s&fields=share%s", neturl.QueryEscape(ids), accessToken)
 }

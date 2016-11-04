@@ -15,6 +15,7 @@ type MapServiceRequest map[string]request
 type MapServiceCount map[string]int64
 type MapUrlServiceCount map[string]MapServiceCount
 type MapUrlResult map[string]result
+type sliceCache []cache
 
 type request struct {
 	Service  string
@@ -29,6 +30,13 @@ type result struct {
 	Count    int64
 	Error    error
 	Response []byte
+}
+
+type cache struct {
+	Service string
+	Url     string
+	Count   int64
+	TtlLeft int64
 }
 
 type worker func(utils.Utils, *request)

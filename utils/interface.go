@@ -11,10 +11,10 @@ type Utils interface {
 	ConfigSet(key string, value string) error
 	ConfigGet(key string) string
 
-	MemorySet(key string, value string, ttl int64) error
-	MemoryGet(key string) (string, error)
+	MemorySet(items *[]MemoryItem) error
+	MemoryGet(items *[]MemoryItem) error
 
-	HistorySave(service string, url string, count int64) error
+	HistorySave(records *[]HistoryRecord) error
 	HistoryLoad(url string) ([]HistoryRecord, error)
 
 	Schedule(task string, data interface{}) error
@@ -25,6 +25,12 @@ type Utils interface {
 }
 
 type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils
+
+type MemoryItem struct {
+	Key   string
+	Value string
+	Ttl   int64
+}
 
 type HistoryRecord struct {
 	Service string    `datastore:"service,noindex"`

@@ -69,7 +69,7 @@ func getWhitelist(u utils.Utils, refresh bool) *regexp.Regexp {
 }
 
 func getBlacklist(u utils.Utils, refresh bool) *regexp.Regexp {
-	if !blacklistPrepared  || refresh {
+	if !blacklistPrepared || refresh {
 		if value := u.ConfigGet("BLACKLIST"); value != "" {
 			compiled, err := regexp.Compile(value)
 			if err != nil {

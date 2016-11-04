@@ -107,9 +107,9 @@ func HistoryJson(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			data[slotString] = HistorySlot{
-				Time: time.Unix(slotInt64, 0).Format(time.RFC1123),
+				Time:   time.Unix(slotInt64, 0).Format(time.RFC1123),
 				Counts: map[string]int64{record.Service: record.Count},
-				Total: record.Count,
+				Total:  record.Count,
 			}
 		}
 	}
