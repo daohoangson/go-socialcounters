@@ -14,7 +14,8 @@ import neturl "net/url"
 
 func facebookWorker(u utils.Utils, req *request) {
 	start := time.Now()
-	url := prepareFbGraphUrl(u, strings.Join(req.Urls, ","))
+	urls := strings.Join(req.Urls, ",")
+	url := prepareFbGraphUrl(u, urls)
 	utils.Verbosef(u, "Calling http.Client.Get(%s)", url)
 
 	resp, err := u.HttpClient().Get(url)
@@ -30,7 +31,7 @@ func facebookWorker(u utils.Utils, req *request) {
 		return
 	}
 	req.Response = respBody
-	u.Debugf("facebookWorker(urls=%d) took %s", len(req.Urls), time.Since(start))
+	u.Debugf("facebookWorker(urls=%s) took %s", urls, time.Since(start))
 
 	for _, url := range req.Urls {
 		var res result
