@@ -3,13 +3,23 @@
 package utils
 
 import (
+	"database/sql"
 	"errors"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bmizerany/mc"
+	"github.com/rubenv/sql-migrate"
 )
+
+const MYSQL_TABLE_NAME_HISTORY = "sc_history"
+const MYSQL_COLUMN_NAME_SERVICE = "service"
+const MYSQL_COLUMN_NAME_URL = "url"
+const MYSQL_COLUMN_NAME_COUNT = "count"
+const MYSQL_COLUMN_NAME_TIME = "time"
 
 type Other struct {
 }
@@ -33,6 +43,10 @@ func (u Other) ConfigGet(key string) string {
 }
 
 func (u Other) MemorySet(items *[]MemoryItem) error {
+	if items == nil || len(*items) < 1 {
+		return nil
+	}
+
 	conn := getMcConn(u)
 	if conn == nil {
 		return errors.New("No memcache connection")
@@ -48,6 +62,10 @@ func (u Other) MemorySet(items *[]MemoryItem) error {
 }
 
 func (u Other) MemoryGet(items *[]MemoryItem) error {
+	if items == nil || len(*items) < 1 {
+		return nil
+	}
+
 	conn := getMcConn(u)
 	if conn == nil {
 		return errors.New("No memcache connection")
@@ -55,7 +73,7 @@ func (u Other) MemoryGet(items *[]MemoryItem) error {
 
 	for index, item := range *items {
 		if value, _, _, err := conn.Get(item.Key); err != nil {
-			u.Errorf("conn.Get(%s) error %v", item.Key, err)
+			Verbosef(u, "conn.Get(%s) error %v", item.Key, err)
 		} else {
 			(*items)[index].Value = value
 		}
@@ -65,11 +83,80 @@ func (u Other) MemoryGet(items *[]MemoryItem) error {
 }
 
 func (u Other) HistorySave(records *[]HistoryRecord) error {
-	return errors.New("Not implemented")
+	if records == nil || len(*records) < 1 {
+		return nil
+	}
+
+	conn := getDbConn(u)
+	if conn == nil {
+		return errors.New("No db connection")
+	}
+
+	sqlStr := "INSERT INTO " + MYSQL_TABLE_NAME_HISTORY +
+		" (" + MYSQL_COLUMN_NAME_SERVICE +
+		", " + MYSQL_COLUMN_NAME_URL +
+		", " + MYSQL_COLUMN_NAME_COUNT +
+		", " + MYSQL_COLUMN_NAME_TIME +
+		") VALUES "
+	vals := []interface{}{}
+	for _, record := range *records {
+		sqlStr += "(?, ?, ?, ?),"
+		vals = append(vals, record.Service, record.Url, record.Count, record.Time)
+	}
+	sqlStr = sqlStr[:len(sqlStr)-1]
+	Verbosef(u, "Other.HistorySave sqlStr = %s, vals = %v", sqlStr, vals)
+
+	stmt, err := conn.Prepare(sqlStr)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(vals...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u Other) HistoryLoad(url string) ([]HistoryRecord, error) {
-	return nil, errors.New("Not implemented")
+	records := []HistoryRecord{}
+
+	conn := getDbConn(u)
+	if conn == nil {
+		return records, errors.New("No db connection")
+	}
+
+	sqlStr := "SELECT " + MYSQL_COLUMN_NAME_SERVICE +
+		", " + MYSQL_COLUMN_NAME_URL +
+		", " + MYSQL_COLUMN_NAME_COUNT +
+		", " + MYSQL_COLUMN_NAME_TIME +
+		" FROM " + MYSQL_TABLE_NAME_HISTORY +
+		" WHERE " + MYSQL_COLUMN_NAME_URL + " = ?"
+	stmt, err := conn.Prepare(sqlStr)
+	if err != nil {
+		return records, err
+	}
+
+	rows, err := stmt.Query(url)
+	if err != nil {
+		return records, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var r HistoryRecord
+		if err := rows.Scan(&r.Service, &r.Url, &r.Count, &r.Time); err != nil {
+			return records, err
+		}
+
+		records = append(records, r)
+	}
+	if err := rows.Err(); err != nil {
+		return records, err
+	}
+
+	return records, nil
 }
 
 func (u Other) Schedule(task string, data interface{}) error {
@@ -121,4 +208,67 @@ func getMcConn(u Other) *mc.Conn {
 	}
 
 	return mcConn
+}
+
+var dbConn *sql.DB
+var dbPrepared = false
+
+func getDbConn(u Other) *sql.DB {
+	if !dbPrepared {
+		if url := os.Getenv("CLEARDB_DATABASE_URL"); url != "" {
+			dsn := url
+			typePrefix := "mysql://"
+			if strings.Index(dsn, typePrefix) == 0 {
+				dsn = dsn[len(typePrefix):]
+			}
+			u.Debugf("Other.getDbConn: dsn=%s", dsn)
+
+			if conn, err := sql.Open("mysql", dsn); err == nil {
+				if err := conn.Ping(); err == nil {
+					dbConn = conn
+					u.Infof("Other.getDbConn: conn.Ping ok")
+
+					verifyDbSchema(u)
+				} else {
+					u.Errorf("Other.getDbConn: conn.Ping error %v", err)
+				}
+			} else {
+				u.Errorf("Other.getDbConn: sql.Open(%s) error %v", dsn, err)
+			}
+		}
+
+		dbPrepared = true
+	}
+
+	return dbConn
+}
+
+func verifyDbSchema(u Other) {
+	migrations := &migrate.MemoryMigrationSource{
+		Migrations: []*migrate.Migration{
+			&migrate.Migration{
+				Id: "1",
+				Up: []string{
+					"CREATE TABLE " + MYSQL_TABLE_NAME_HISTORY +
+						" (" +
+						MYSQL_COLUMN_NAME_SERVICE + " VARCHAR(255) NOT NULL, " +
+						MYSQL_COLUMN_NAME_URL + " VARCHAR(255) NOT NULL, " +
+						MYSQL_COLUMN_NAME_COUNT + " INT(10) UNSIGNED NOT NULL, " +
+						MYSQL_COLUMN_NAME_TIME + " DATETIME NOT NULL, " +
+						"KEY key_url  (" + MYSQL_COLUMN_NAME_URL + "), " +
+						"KEY key_time (" + MYSQL_COLUMN_NAME_TIME + ")" +
+						")",
+				},
+				Down: []string{"DROP TABLE " + MYSQL_TABLE_NAME_HISTORY},
+			},
+		},
+	}
+
+	n, err := migrate.Exec(dbConn, "mysql", migrations, migrate.Up)
+	if err != nil {
+		u.Errorf("migrate.Exec error %v", err)
+		return
+	}
+
+	Verbosef(u, "Other.verifyDbSchema: migrate.Exec ok n=%d", n)
 }

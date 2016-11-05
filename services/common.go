@@ -186,7 +186,9 @@ func executeRequests(u utils.Utils, requests *MapServiceRequest, data *MapUrlSer
 	historyWg.Wait()
 
 	setCaches(u, &caches)
-	u.HistorySave(&histories)
+	if err := u.HistorySave(&histories); err != nil {
+		u.Errorf("u.HistorySave error %v", err)
+	}
 }
 
 func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
@@ -239,9 +241,9 @@ func getCacheKey(c cache) string {
 	return fmt.Sprintf("%s/%s", c.Service, c.Url)
 }
 
-func setCaches(u utils.Utils, caches *sliceCache) error {
+func setCaches(u utils.Utils, caches *sliceCache) {
 	if caches == nil || len(*caches) < 1 {
-		return nil
+		return
 	}
 
 	items := make([]utils.MemoryItem, len(*caches))
@@ -265,8 +267,6 @@ func setCaches(u utils.Utils, caches *sliceCache) error {
 	if err := u.MemorySet(&items); err != nil {
 		u.Errorf("u.MemorySet(%d) error %v", len(items), err)
 	}
-
-	return nil
 }
 
 func getCaches(u utils.Utils, caches *sliceCache) error {

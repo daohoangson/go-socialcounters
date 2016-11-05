@@ -20,6 +20,11 @@
 			"Rev": "21824099efdd57011361c6d7047160846b3fec78"
 		},
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-209-gce924a4",
+			"Rev": "ce924a41eea897745442daaa1739089b0f3f561d"
+		},
+		{
 			"ImportPath": "github.com/rs/cors",
 			"Comment": "v1.0",
 			"Rev": "a62a804a8a009876ca59105f7899938a1349f4b3"
@@ -28,6 +33,14 @@
 			"ImportPath": "github.com/rs/xhandler",
 			"Comment": "v1.0-1-ged27b6f",
 			"Rev": "ed27b6fd65218132ee50cd95f38474a3d8a2cd12"
+		},
+		{
+			"ImportPath": "github.com/rubenv/sql-migrate",
+			"Rev": "6f4757563362064790a6687a6b60f182062c8634"
+		},
+		{
+			"ImportPath": "github.com/rubenv/sql-migrate/sqlparse",
+			"Rev": "6f4757563362064790a6687a6b60f182062c8634"
 		},
 		{
 			"ImportPath": "github.com/tdewolff/buffer",
@@ -96,6 +109,11 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "c46f265c325130a7a6c7b27db8c6fe14b64f1a68"
+		},
+		{
+			"ImportPath": "gopkg.in/gorp.v1",
+			"Comment": "v1.7.1",
+			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
 		}
 	]
 }
