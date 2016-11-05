@@ -1,0 +1,46 @@
+version: '2'
+
+services:
+  golang:
+    build:
+      context: .
+    command: ./docker-cmd.sh
+    environment:
+      - CLEARDB_DATABASE_URL=mysql://docker:123456@tcp(mysql:3306)/db?parseTime=1
+      - MEMCACHIER_SERVERS=memcached:11211
+      - VERBOSE=1
+    links:
+      - memcached
+      - mysql
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/usr/local/go/src/github.com/daohoangson/go-socialcounters
+    working_dir: /usr/local/go/src/github.com/daohoangson/go-socialcounters
+
+  memcached:
+    image: memcached
+
+  memcached-admin:
+    image: jacksoncage/phpmemcachedadmin
+    links:
+      - memcached
+    ports:
+      - "8081:80"
+
+  mysql:
+    image: mysql:latest
+    environment:
+      - MYSQL_DATABASE=db
+      - MYSQL_PASSWORD=123456
+      - MYSQL_RANDOM_ROOT_PASSWORD=1
+      - MYSQL_USER=docker
+    volumes:
+      - ./.data/mysql:/var/lib/mysql:rw
+
+  mysql-admin:
+    image: clue/adminer
+    links:
+      - mysql
+    ports:
+      - "8082:80"
