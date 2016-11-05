@@ -34,7 +34,7 @@ type MemoryItem struct {
 
 type HistoryRecord struct {
 	Service string    `datastore:"service,noindex"`
-	Url     string    `datastore:"url,noindex"`
+	Url     string    `datastore:"url"`
 	Count   int64     `datastore:"count,noindex"`
-	Time    time.Time `datastore:"time,noindex"`
+	Time    time.Time `datastore:"time"`
 }
