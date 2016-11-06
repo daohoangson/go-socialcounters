@@ -4,10 +4,14 @@ services:
   golang:
     build:
       context: .
+      dockerfile: docker-Dockerfile
     command: ./docker-cmd.sh
     environment:
       - CLEARDB_DATABASE_URL=mysql://docker:123456@tcp(mysql:3306)/db?parseTime=1
       - MEMCACHIER_SERVERS=memcached:11211
+      - TTL_DEFAULT=10
+      - REFRESH_TTL_LEFT_THRESHOLD=5
+      - REFRESH_BATCH_SIZE=2
       - VERBOSE=1
     links:
       - memcached
