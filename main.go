@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/daohoangson/go-socialcounters/utils"
+	"github.com/daohoangson/go-socialcounters/services"
 	"github.com/daohoangson/go-socialcounters/web"
 )
 
@@ -17,6 +18,7 @@ func utilsFunc(w http.ResponseWriter, r *http.Request) utils.Utils {
 }
 
 func main() {
+	services.Init()
 	handler := web.BuildHandler(utilsFunc, true)
 
 	port := os.Getenv("PORT")

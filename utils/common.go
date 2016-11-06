@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+var DelayHandlers = make(map[string]DelayHandler)
+
 func ConfigGetInt(u Utils, key string) (int64, error) {
 	if env := u.ConfigGet(key); env != "" {
 		if int, err := strconv.ParseInt(env, 10, 64); err != nil {

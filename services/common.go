@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/daohoangson/go-socialcounters/utils"
 )
 
+const DELAY_HANDLER_NAME_REFRESH = "services.Refresh";
+
 var workers = map[string]worker{
 	SERVICE_FACEBOOK: facebookWorker,
 	SERVICE_TWITTER:  twitterWorker,
@@ -18,6 +21,10 @@ var workers = map[string]worker{
 
 var dataNeedRefresh *MapUrlServiceCount
 var dataNeedRefreshCount = int64(0)
+
+func Init() {
+	utils.DelayHandlers[DELAY_HANDLER_NAME_REFRESH] = refreshHandler
+}
 
 func DataSetup() MapUrlServiceCount {
 	return make(MapUrlServiceCount)
@@ -232,9 +239,19 @@ func scheduleRefreshIfNeeded(u utils.Utils) {
 		return
 	}
 
-	u.Schedule("refresh", dataNeedRefresh)
+	u.Delay(DELAY_HANDLER_NAME_REFRESH, *dataNeedRefresh)
 	dataNeedRefresh = nil
 	dataNeedRefreshCount = 0
+}
+
+func refreshHandler(u utils.Utils, args ...interface{}) error {
+	data, ok := args[0].(MapUrlServiceCount)
+	if !ok {
+		return errors.New(fmt.Sprintf("services.refreshHandler: data could not be extracted from %v", args))
+	}
+	Refresh(u, &data)
+
+	return nil
 }
 
 func getCacheKey(c cache) string {

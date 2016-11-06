@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	_ "github.com/go-sql-driver/mysql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -40,6 +41,21 @@ func (u Other) ConfigSet(key string, value string) error {
 
 func (u Other) ConfigGet(key string) string {
 	return os.Getenv(key)
+}
+
+func (u Other) Delay(handlerName string, args ...interface{}) error {
+	handler, ok := DelayHandlers[handlerName]
+	if !ok {
+		return errors.New(fmt.Sprintf("Handler %s could not be found", handlerName))
+	}
+
+	// TODO: use thread pool / channel
+	go func() {
+		Verbosef(u, "Other.Delay: executing %s(%v)", handlerName, &args)
+		handler(u, args...)
+	}()
+
+	return nil
 }
 
 func (u Other) MemorySet(items *[]MemoryItem) error {
@@ -157,10 +173,6 @@ func (u Other) HistoryLoad(url string) ([]HistoryRecord, error) {
 	}
 
 	return records, nil
-}
-
-func (u Other) Schedule(task string, data interface{}) error {
-	return errors.New("Not implemented")
 }
 
 func (u Other) Errorf(format string, args ...interface{}) {

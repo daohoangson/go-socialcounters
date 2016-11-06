@@ -3,7 +3,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -11,8 +10,8 @@ import (
 
 	"appengine"
 	"appengine/datastore"
+	"appengine/delay"
 	"appengine/memcache"
-	"appengine/taskqueue"
 	"appengine/urlfetch"
 )
 
@@ -20,6 +19,7 @@ var gaeConfigs = make(map[string]string)
 
 const GAE_DATASTORE_KIND_CONFIG = "Config"
 const GAE_DATASTORE_KIND_HISTORY_RECORD = "HistoryRecord"
+const GAE_DELAY_KEY = "go-socialcounters"
 
 type GaeConfig struct {
 	Value   string    `datastore:"value,noindex"`
@@ -83,6 +83,35 @@ func (u GAE) ConfigGet(key string) string {
 	gaeConfigs[key] = e.Value
 
 	return e.Value
+}
+
+var gaeDelayFunc = delay.Func(GAE_DELAY_KEY, func(c appengine.Context, delayFuncArgs ...interface{}) error {
+	handlerName, ok := delayFuncArgs[0].(string)
+	if !ok {
+		c.Errorf("GAE.Delay: handler name could not be extracted from %v", delayFuncArgs)
+		return nil
+	}
+
+	handler, ok := DelayHandlers[handlerName]
+	if !ok {
+		c.Errorf("GAE.Delay: handler %s could not be found", handlerName)
+		return nil
+	}
+
+	u := new(GAE)
+	u.context = c
+	args := delayFuncArgs[1:]
+	Verbosef(u, "GAE.Delay: executing %s(%v)", handlerName, &args)
+
+	return handler(u, args...)
+})
+
+func (u GAE) Delay(handlerName string, args ...interface{}) error {
+	delayFuncArgs := append([]interface{}{handlerName}, args...)
+	gaeDelayFunc.Call(u.context, delayFuncArgs...)
+	Verbosef(u, "GAE.Delay: delaying %s(%v)", handlerName, &args)
+
+	return nil
 }
 
 func (u GAE) MemorySet(items *[]MemoryItem) error {
@@ -170,23 +199,6 @@ func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 	}
 
 	return records, nil
-}
-
-func (u GAE) Schedule(task string, data interface{}) error {
-	json, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	t := taskqueue.Task{
-		Path:    "/tasks/" + task,
-		Payload: json,
-	}
-	if _, err := taskqueue.Add(u.context, &t, ""); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (u GAE) Errorf(format string, args ...interface{}) {

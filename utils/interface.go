@@ -8,6 +8,8 @@ import (
 type Utils interface {
 	HttpClient() *http.Client
 
+	Delay(handlerName string, args ...interface{}) error
+
 	ConfigSet(key string, value string) error
 	ConfigGet(key string) string
 
@@ -17,14 +19,14 @@ type Utils interface {
 	HistorySave(records *[]HistoryRecord) error
 	HistoryLoad(url string) ([]HistoryRecord, error)
 
-	Schedule(task string, data interface{}) error
-
 	Errorf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
 }
 
 type UtilsFunc func(w http.ResponseWriter, r *http.Request) Utils
+
+type DelayHandler func(u Utils, args ...interface{}) error
 
 type MemoryItem struct {
 	Key   string

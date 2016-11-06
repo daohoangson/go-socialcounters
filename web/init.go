@@ -29,8 +29,6 @@ func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 
 	mux.HandleFunc("/config", httpConfig)
 
-	mux.HandleFunc("/tasks/refresh", httpTaskRefresh)
-
 	handler := cors.Default().Handler(mux)
 	if !doGzip {
 		return handler
@@ -99,9 +97,4 @@ func httpConfig(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ConfigPost(u, w, r)
 	}
-}
-
-func httpTaskRefresh(w http.ResponseWriter, r *http.Request) {
-	u := uf(w, r)
-	TaskRefresh(u, w, r)
 }
