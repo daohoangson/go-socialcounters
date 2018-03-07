@@ -1,7 +1,0 @@
-FROM golang:alpine
-
-RUN apk add --no-cache --update git \
-	&& (rm "/tmp/"* 2>/dev/null || true) \
-	&& (rm -rf /var/cache/apk/* 2>/dev/null || true)
-
-VOLUME ["/usr/local/go/src"]
