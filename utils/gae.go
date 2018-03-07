@@ -3,7 +3,9 @@
 package utils
 
 import (
+	"context"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -37,8 +39,21 @@ func GaeNew(r *http.Request) Utils {
 	return utils
 }
 
-func (u GAE) HttpClient() *http.Client {
-	return urlfetch.Client(u.context)
+func (u GAE) HttpGet(url string) ([]byte, error) {
+	ctxWithTimeout, err := context.WithTimeout(u.context, 1*time.Second)
+	if err != nil {
+		return nil, err
+	}
+
+	client := urlfetch.Client(ctxWithTimeout)
+	req.Header.Set("User-Agent", userAgent)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
 }
 
 func (u GAE) ConfigSet(key string, value string) error {

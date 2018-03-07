@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"io/ioutil"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -21,14 +20,7 @@ func twitterLegacy(u utils.Utils, url string) result {
 	oscUrl := "http://opensharecount.com/count.json?url=" + neturl.QueryEscape(url)
 	utils.Verbosef(u, "Calling http.Client.Get(%s)", oscUrl)
 
-	resp, err := u.HttpClient().Get(oscUrl)
-	if err != nil {
-		res.Error = err
-		return res
-	}
-
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := u.HttpGet(oscUrl)
 	if err != nil {
 		res.Error = err
 		return res

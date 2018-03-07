@@ -5,12 +5,15 @@ package utils
 import (
 	"database/sql"
 	"errors"
-	_ "github.com/go-sql-driver/mysql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/bmizerany/mc"
 	"github.com/rubenv/sql-migrate"
@@ -31,8 +34,24 @@ func OtherNew(r *http.Request) Utils {
 	return utils
 }
 
-func (u Other) HttpClient() *http.Client {
-	return &http.Client{}
+var httpClient = &http.Client{
+	Timeout: 1 * time.Second,
+}
+
+func (u Other) HttpGet(url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", userAgent)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
 }
 
 func (u Other) ConfigSet(key string, value string) error {

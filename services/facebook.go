@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -18,14 +17,7 @@ func facebookWorker(u utils.Utils, req *request) {
 	url := prepareFbGraphUrl(u, urls)
 	utils.Verbosef(u, "Calling http.Client.Get(%s)", url)
 
-	resp, err := u.HttpClient().Get(url)
-	if err != nil {
-		req.Error = err
-		return
-	}
-
-	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := u.HttpGet(url)
 	if err != nil {
 		req.Error = err
 		return

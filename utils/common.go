@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3355.0 Safari/537.36"
+
 var DelayHandlers = make(map[string]DelayHandler)
 
 func ConfigGetInt(u Utils, key string) (int64, error) {

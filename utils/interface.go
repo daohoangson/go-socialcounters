@@ -6,7 +6,7 @@ import (
 )
 
 type Utils interface {
-	HttpClient() *http.Client
+	HttpGet(url string) ([]byte, error)
 
 	Delay(handlerName string, args ...interface{}) error
 
