@@ -29,7 +29,7 @@ func ConfigGetIntWithDefault(u Utils, key string, valueDefault int64) int64 {
 	return valueDefault
 }
 
-func ConfigGetTtlDefault(u Utils) int64 {
+func ConfigGetTTLDefault(u Utils) int64 {
 	return ConfigGetIntWithDefault(u, "TTL_DEFAULT", 300)
 }
 

@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"encoding/gob"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,33 +11,41 @@ import (
 	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-const DELAY_HANDLER_NAME_REFRESH = "services.Refresh";
+const delayHandlerNameRefresh = "services.Refresh"
 
 var workers = map[string]worker{
-	SERVICE_FACEBOOK: facebookWorker,
-	SERVICE_TWITTER:  twitterWorker,
+	serviceFacebook: facebookWorker,
+	serviceTwitter:  twitterWorker,
 }
 
-var dataNeedRefresh *MapUrlServiceCount
+var dataNeedRefresh *mapURLServiceCount
 var dataNeedRefreshCount = int64(0)
 
+// Init sets up global environment
 func Init() {
-	utils.DelayHandlers[DELAY_HANDLER_NAME_REFRESH] = refreshHandler
+	utils.DelayHandlers[delayHandlerNameRefresh] = refreshHandler
+
+	// for GAE
+	gob.Register(mapURLServiceCount{})
 }
 
-func DataSetup() MapUrlServiceCount {
-	return make(MapUrlServiceCount)
+// DataSetup prepares data before processing
+func DataSetup() mapURLServiceCount {
+	return make(mapURLServiceCount)
 }
 
-func DataAdd(data *MapUrlServiceCount, service string, url string) {
+// DataAdd includes the specified service / url combination for processing
+func DataAdd(data *mapURLServiceCount, service string, url string) {
 	if _, ok := (*data)[url]; !ok {
-		(*data)[url] = make(MapServiceCount)
+		(*data)[url] = make(mapServiceCount)
 	}
 
-	(*data)[url][service] = COUNT_NO_VALUE
+	(*data)[url][service] = countNoValue
 }
 
-func FillData(u utils.Utils, data *MapUrlServiceCount) {
+// FillData uses values from caches and databases to return values as fast as possible,
+// if no values are usable, it will go and fetch from remote services
+func FillData(u utils.Utils, data *mapURLServiceCount) {
 	fillDataFromCache(u, data, true)
 	requests := buildRequests(u, data, true)
 	executeRequests(u, &requests, data)
@@ -54,21 +62,22 @@ func FillData(u utils.Utils, data *MapUrlServiceCount) {
 	}
 }
 
-func Refresh(u utils.Utils, data *MapUrlServiceCount) {
+// Refresh executes fetch from remote services
+func Refresh(u utils.Utils, data *mapURLServiceCount) {
 	requests := buildRequests(u, data, false)
 	executeRequests(u, &requests, data)
 }
 
-func fillDataFromCache(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bool) {
+func fillDataFromCache(u utils.Utils, data *mapURLServiceCount, handleNoValueOnly bool) {
 	caches := make(sliceCache, 0)
 
 	for url, services := range *data {
 		for service, count := range services {
-			if handleNoValueOnly && count != COUNT_NO_VALUE {
+			if handleNoValueOnly && count != countNoValue {
 				continue
 			}
 
-			caches = append(caches, cache{Service: service, Url: url, Count: COUNT_NO_VALUE})
+			caches = append(caches, cache{Service: service, URL: url, Count: countNoValue})
 		}
 	}
 
@@ -76,22 +85,22 @@ func fillDataFromCache(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnl
 		u.Errorf("services.getCaches(%d) error %v", len(caches), err)
 	} else {
 		for _, cache := range caches {
-			(*data)[cache.Url][cache.Service] = cache.Count
+			(*data)[cache.URL][cache.Service] = cache.Count
 		}
 
 		checkCachesForRefresh(u, &caches)
 	}
 }
 
-func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bool) MapServiceRequest {
+func buildRequests(u utils.Utils, data *mapURLServiceCount, handleNoValueOnly bool) mapServiceRequest {
 	utils.Verbosef(u, "services.buildRequests(%s, %s)", data, handleNoValueOnly)
 
-	requests := make(MapServiceRequest)
+	requests := make(mapServiceRequest)
 	caches := make(sliceCache, 0)
 
 	for url, services := range *data {
 		for service, count := range services {
-			if handleNoValueOnly && count != COUNT_NO_VALUE {
+			if handleNoValueOnly && count != countNoValue {
 				continue
 			}
 
@@ -104,10 +113,10 @@ func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bo
 			// temporary mark the cached count as fresh to avoid other process
 			// also trying to refresh it, we will take care of it later
 			temporaryCount := count
-			if temporaryCount == COUNT_NO_VALUE {
-				temporaryCount = COUNT_INITIAL_VALUE
+			if temporaryCount == countNoValue {
+				temporaryCount = countInitValue
 			}
-			caches = append(caches, cache{Service: service, Url: url, Count: temporaryCount})
+			caches = append(caches, cache{Service: service, URL: url, Count: temporaryCount})
 
 			if req, ok := requests[service]; ok {
 				req.Urls = append(req.Urls, url)
@@ -117,7 +126,7 @@ func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bo
 				newReq.Service = service
 				newReq.Worker = worker
 				newReq.Urls = []string{url}
-				newReq.Results = make(MapUrlResult)
+				newReq.Results = make(mapURLResult)
 
 				requests[service] = newReq
 			}
@@ -129,7 +138,7 @@ func buildRequests(u utils.Utils, data *MapUrlServiceCount, handleNoValueOnly bo
 	return requests
 }
 
-func executeRequests(u utils.Utils, requests *MapServiceRequest, data *MapUrlServiceCount) {
+func executeRequests(u utils.Utils, requests *mapServiceRequest, data *mapURLServiceCount) {
 	utils.Verbosef(u, "services.executeRequests(%s)", requests)
 	if len(*requests) < 1 {
 		return
@@ -161,9 +170,9 @@ func executeRequests(u utils.Utils, requests *MapServiceRequest, data *MapUrlSer
 				if res.Error != nil {
 					u.Errorf("services.%s: %s error %v response %s", req.Service, url, res.Error, res.Response)
 				} else {
-					if res.Count > COUNT_INITIAL_VALUE && res.Count > oldCount {
+					if res.Count > countInitValue && res.Count > oldCount {
 						cacheWg.Add(1)
-						cacheCh <- cache{Service: req.Service, Url: url, Count: res.Count}
+						cacheCh <- cache{Service: req.Service, URL: url, Count: res.Count}
 
 						historyWg.Add(1)
 						historyCh <- utils.HistoryRecord{Service: req.Service, Url: url, Count: res.Count, Time: historyTime}
@@ -202,20 +211,20 @@ func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
 	ttlLeftThreshold := utils.ConfigGetIntWithDefault(u, "REFRESH_TTL_LEFT_THRESHOLD", 10)
 
 	for _, c := range *caches {
-		if c.TtlLeft > ttlLeftThreshold {
+		if c.TTLLeft > ttlLeftThreshold {
 			continue
 		}
 
-		if c.Count < COUNT_INITIAL_VALUE {
+		if c.Count < countInitValue {
 			continue
 		}
 
 		if dataNeedRefresh == nil {
-			newData := make(MapUrlServiceCount)
+			newData := make(mapURLServiceCount)
 			dataNeedRefresh = &newData
 		}
-		DataAdd(dataNeedRefresh, c.Service, c.Url)
-		(*dataNeedRefresh)[c.Url][c.Service] = c.Count
+		DataAdd(dataNeedRefresh, c.Service, c.URL)
+		(*dataNeedRefresh)[c.URL][c.Service] = c.Count
 
 		// intentionally do not count unique url because if one url got flagged
 		// multiple times, it should be refreshed anyway
@@ -223,7 +232,7 @@ func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
 
 		// temporary mark the cached count as fresh to avoid other process
 		// also trying to refresh it, we will take care of it later
-		newCaches = append(newCaches, cache{Service: c.Service, Url: c.Url, Count: c.Count})
+		newCaches = append(newCaches, cache{Service: c.Service, URL: c.URL, Count: c.Count})
 	}
 
 	setCaches(u, &newCaches)
@@ -238,15 +247,15 @@ func scheduleRefreshIfNeeded(u utils.Utils) {
 		return
 	}
 
-	u.Delay(DELAY_HANDLER_NAME_REFRESH, *dataNeedRefresh)
+	u.Delay(delayHandlerNameRefresh, *dataNeedRefresh)
 	dataNeedRefresh = nil
 	dataNeedRefreshCount = 0
 }
 
 func refreshHandler(u utils.Utils, args ...interface{}) error {
-	data, ok := args[0].(MapUrlServiceCount)
+	data, ok := args[0].(mapURLServiceCount)
 	if !ok {
-		return errors.New(fmt.Sprintf("services.refreshHandler: data could not be extracted from %v", args))
+		return fmt.Errorf("services.refreshHandler: data could not be extracted from %v", args)
 	}
 	Refresh(u, &data)
 
@@ -254,7 +263,7 @@ func refreshHandler(u utils.Utils, args ...interface{}) error {
 }
 
 func getCacheKey(c cache) string {
-	return fmt.Sprintf("%s/%s", c.Service, c.Url)
+	return fmt.Sprintf("%s/%s", c.Service, c.URL)
 }
 
 func setCaches(u utils.Utils, caches *sliceCache) {
@@ -264,18 +273,18 @@ func setCaches(u utils.Utils, caches *sliceCache) {
 
 	items := make([]utils.MemoryItem, len(*caches))
 	ttlMemory := utils.ConfigGetIntWithDefault(u, "TTL_MEMORY", 86400)
-	ttlDefault := utils.ConfigGetTtlDefault(u)
+	ttlDefault := utils.ConfigGetTTLDefault(u)
 	ttlRestricted := utils.ConfigGetIntWithDefault(u, "TTL_RESTRICTED", 60)
 
 	for index, cache := range *caches {
-		valueTtl := ttlDefault
+		valueTTL := ttlDefault
 		if cache.Count < 1 {
-			valueTtl = ttlRestricted
+			valueTTL = ttlRestricted
 		}
 
 		items[index] = utils.MemoryItem{
 			Key:   getCacheKey(cache),
-			Value: fmt.Sprintf("%d;%d", cache.Count, time.Now().Unix()+valueTtl),
+			Value: fmt.Sprintf("%d;%d", cache.Count, time.Now().Unix()+valueTTL),
 			Ttl:   ttlMemory,
 		}
 	}
@@ -311,7 +320,7 @@ func getCaches(u utils.Utils, caches *sliceCache) error {
 		if len(parts) >= 2 {
 			// value with expire timestamp
 			if exp, expErr := strconv.ParseInt(parts[1], 10, 64); expErr == nil {
-				(*caches)[index].TtlLeft = exp - time.Now().Unix()
+				(*caches)[index].TTLLeft = exp - time.Now().Unix()
 			}
 		}
 

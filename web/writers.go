@@ -9,7 +9,7 @@ import (
 )
 
 func writeCacheControlHeaders(u utils.Utils, w http.ResponseWriter, r *http.Request) {
-	ttl := utils.ConfigGetTtlDefault(u)
+	ttl := utils.ConfigGetTTLDefault(u)
 	w.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", ttl))
 
 	expires := time.Now().Add(time.Duration(ttl) * time.Second)

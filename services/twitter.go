@@ -17,10 +17,10 @@ func twitterWorker(u utils.Utils, r *request) {
 func twitterLegacy(u utils.Utils, url string) result {
 	var res result
 	start := time.Now()
-	oscUrl := "http://opensharecount.com/count.json?url=" + neturl.QueryEscape(url)
-	utils.Verbosef(u, "Calling http.Client.Get(%s)", oscUrl)
+	oscURL := "http://opensharecount.com/count.json?url=" + neturl.QueryEscape(url)
+	utils.Verbosef(u, "Doing GET %s...", oscURL)
 
-	respBody, err := u.HttpGet(oscUrl)
+	respBody, err := u.HttpGet(oscURL)
 	if err != nil {
 		res.Error = err
 		return res

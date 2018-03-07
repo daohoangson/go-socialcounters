@@ -10,11 +10,11 @@ import (
 
 var u = utils.OtherNew(nil)
 
-func assert(t *testing.T, req request, expectedUrl string, expectedCount int64) {
+func assert(t *testing.T, req request, expectedURL string, expectedCount int64) {
 	expectedResultFound := false
 
 	for url, res := range req.Results {
-		if url != expectedUrl {
+		if url != expectedURL {
 			continue
 		}
 		expectedResultFound = true
@@ -31,7 +31,7 @@ func assert(t *testing.T, req request, expectedUrl string, expectedCount int64) 
 	}
 
 	if !expectedResultFound {
-		t.Fatalf("Expected result for url %s could not be found", expectedUrl)
+		t.Fatalf("Expected result for url %s could not be found", expectedURL)
 	}
 }
 
@@ -47,7 +47,7 @@ func testMulti(t *testing.T, f worker, urls []string, expectedCounts []int64) {
 	var req request
 	req.Service = runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 	req.Urls = urls
-	req.Results = make(MapUrlResult)
+	req.Results = make(mapURLResult)
 	f(u, &req)
 
 	if len(req.Results) != len(urls) {
@@ -70,14 +70,14 @@ func TestTwitter(t *testing.T) {
 }
 
 func TestFillData(t *testing.T) {
-	facebookUrl1 := "https://facebook.com"
-	facebookUrl2 := "https://developers.facebook.com"
-	twitterUrl1 := "https://twitter.com"
-	twitterUrl2 := "http://opensharecount.com"
+	facebook1 := "https://facebook.com"
+	facebook2 := "https://developers.facebook.com"
+	twitter1 := "https://twitter.com"
+	twitter2 := "http://opensharecount.com"
 
 	mapping := map[string][]string{
-		SERVICE_FACEBOOK: []string{facebookUrl1, facebookUrl2},
-		SERVICE_TWITTER:  []string{twitterUrl1, twitterUrl2},
+		serviceFacebook: []string{facebook1, facebook2},
+		serviceTwitter:  []string{twitter1, twitter2},
 	}
 
 	data := DataSetup()

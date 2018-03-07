@@ -14,8 +14,8 @@ import neturl "net/url"
 func facebookWorker(u utils.Utils, req *request) {
 	start := time.Now()
 	urls := strings.Join(req.Urls, ",")
-	url := prepareFbGraphUrl(u, urls)
-	utils.Verbosef(u, "Calling http.Client.Get(%s)", url)
+	url := prepareFbGraphURL(u, urls)
+	utils.Verbosef(u, "Doing GET %s...", url)
 
 	respBody, err := u.HttpGet(url)
 	if err != nil {
@@ -28,14 +28,14 @@ func facebookWorker(u utils.Utils, req *request) {
 	for _, url := range req.Urls {
 		var res result
 
-		if respUrl, _, _, err := jsonparser.Get(respBody, url); err != nil {
+		if urlResp, _, _, err := jsonparser.Get(respBody, url); err != nil {
 			res.Error = err
 			res.Response = respBody
 		} else {
-			res.Response = respUrl
-			if shareCount, err := jsonparser.GetInt(respUrl, "share", "share_count"); err != nil {
+			res.Response = urlResp
+			if shareCount, err := jsonparser.GetInt(urlResp, "share", "share_count"); err != nil {
 				// it's alright, for new urls Facebook does not return share.share_count at all
-				res.Count = COUNT_INITIAL_VALUE
+				res.Count = countInitValue
 			} else {
 				res.Count = shareCount
 			}
@@ -47,13 +47,13 @@ func facebookWorker(u utils.Utils, req *request) {
 	return
 }
 
-func prepareFbGraphUrl(u utils.Utils, ids string) string {
+func prepareFbGraphURL(u utils.Utils, ids string) string {
 	scheme := "http"
 	accessToken := ""
-	if appId := u.ConfigGet("FACEBOOK_APP_ID"); appId != "" {
+	if appID := u.ConfigGet("FACEBOOK_APP_ID"); appID != "" {
 		if appSecret := u.ConfigGet("FACEBOOK_APP_SECRET"); appSecret != "" {
 			scheme = "https"
-			accessToken = fmt.Sprintf("&access_token=%s|%s", appId, appSecret)
+			accessToken = fmt.Sprintf("&access_token=%s|%s", appID, appSecret)
 		}
 	}
 

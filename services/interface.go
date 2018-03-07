@@ -4,16 +4,15 @@ import (
 	"github.com/daohoangson/go-socialcounters/utils"
 )
 
-const SERVICE_FACEBOOK = "Facebook"
-const SERVICE_TWITTER = "Twitter"
+const countNoValue = int64(-1)
+const countInitValue = int64(0)
+const serviceFacebook = "Facebook"
+const serviceTwitter = "Twitter"
 
-const COUNT_NO_VALUE = int64(-1)
-const COUNT_INITIAL_VALUE = int64(0)
-
-type MapServiceRequest map[string]request
-type MapServiceCount map[string]int64
-type MapUrlServiceCount map[string]MapServiceCount
-type MapUrlResult map[string]result
+type mapServiceRequest map[string]request
+type mapServiceCount map[string]int64
+type mapURLServiceCount map[string]mapServiceCount
+type mapURLResult map[string]result
 type sliceCache []cache
 
 type request struct {
@@ -22,7 +21,7 @@ type request struct {
 	Urls     []string
 	Response []byte
 	Error    error
-	Results  MapUrlResult
+	Results  mapURLResult
 }
 
 type result struct {
@@ -33,9 +32,9 @@ type result struct {
 
 type cache struct {
 	Service string
-	Url     string
+	URL     string
 	Count   int64
-	TtlLeft int64
+	TTLLeft int64
 }
 
 type worker func(utils.Utils, *request)
