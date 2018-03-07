@@ -6,7 +6,6 @@ import (
 
 const SERVICE_FACEBOOK = "Facebook"
 const SERVICE_TWITTER = "Twitter"
-const SERVICE_GOOGLE = "Google"
 
 const COUNT_NO_VALUE = int64(-1)
 const COUNT_INITIAL_VALUE = int64(0)

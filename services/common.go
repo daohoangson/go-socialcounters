@@ -16,7 +16,6 @@ const DELAY_HANDLER_NAME_REFRESH = "services.Refresh";
 var workers = map[string]worker{
 	SERVICE_FACEBOOK: facebookWorker,
 	SERVICE_TWITTER:  twitterWorker,
-	SERVICE_GOOGLE:   googleWorker,
 }
 
 var dataNeedRefresh *MapUrlServiceCount

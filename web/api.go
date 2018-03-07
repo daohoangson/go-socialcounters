@@ -46,7 +46,6 @@ func AllJs(u utils.Utils, w http.ResponseWriter, r *http.Request) {
 
 	js = strings.Replace(js, "{facebooksvg}", readSvgAsJson("private/img/facebook.svg"), 1)
 	js = strings.Replace(js, "{twittersvg}", readSvgAsJson("private/img/twitter.svg"), 1)
-	js = strings.Replace(js, "{googlesvg}", readSvgAsJson("private/img/google.svg"), 1)
 
 	js = strings.Replace(js, "{ads}", getAdsAsJson(u), 1)
 	js = strings.Replace(js, "{counts}", string(countsJson), 1)

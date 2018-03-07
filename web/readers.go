@@ -61,7 +61,7 @@ func parseServices(r *http.Request) []string {
 		return services
 	}
 
-	return []string{"Facebook", "Twitter", "Google"}
+	return []string{"Facebook", "Twitter"}
 }
 
 func readSvgAsJson(filename string) string {

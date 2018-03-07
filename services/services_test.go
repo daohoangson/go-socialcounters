@@ -65,10 +65,6 @@ func TestFacebook(t *testing.T) {
 	testMulti(t, facebookWorker, urls, expectedCounts)
 }
 
-func TestGoogle(t *testing.T) {
-	testOne(t, googleWorker, "https://google.com", int64(10000000))
-}
-
 func TestTwitter(t *testing.T) {
 	testOne(t, twitterWorker, "https://twitter.com", int64(97000))
 }
@@ -76,14 +72,11 @@ func TestTwitter(t *testing.T) {
 func TestFillData(t *testing.T) {
 	facebookUrl1 := "https://facebook.com"
 	facebookUrl2 := "https://developers.facebook.com"
-	googleUrl1 := "https://google.com"
-	googleUrl2 := "https://developers.google.com"
 	twitterUrl1 := "https://twitter.com"
 	twitterUrl2 := "http://opensharecount.com"
 
 	mapping := map[string][]string{
 		SERVICE_FACEBOOK: []string{facebookUrl1, facebookUrl2},
-		SERVICE_GOOGLE:   []string{googleUrl1, googleUrl2},
 		SERVICE_TWITTER:  []string{twitterUrl1, twitterUrl2},
 	}
 

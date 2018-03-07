@@ -1,12 +1,11 @@
 # Social Counters with SVG logos!
 This golang app provides consistent and faster social counters for popular social networks.
 Traditionally, website owners have to include scripts from social networks to display their buttons
-and share counters (see [Facebook](https://developers.facebook.com/docs/plugins/share-button),
-[Twitter](https://about.twitter.com/resources/buttons) and [Google](https://developers.google.com/+/web/share/) documents).
+and share counters (see [Facebook](https://developers.facebook.com/docs/plugins/share-button) and [Twitter](https://about.twitter.com/resources/buttons) documents).
 Unfortunately, those buttons do not align well together (different style, inflexible width, etc.) and more importantly,
 they often make a lot of extra requests in order to render correctly, generally make it a bad user experience.
 
-This app implement counters fetcher for Facebook, Twitter and Google+ and return everything in one single request
+This app implement counters fetcher for Facebook/Twitter and return everything in one single request
 of about 8KB (gzip) or 15KB (original). With the only script inclusion, it can display all the signature logos of
 those networks **and** their counters for the specified url.
 
@@ -52,9 +51,6 @@ Finally, call `socialcounters()` on the jQuery object to get counters data from 
   <a class="sc-service sc-twitter" rel="twitter-link">
     <span class="sc-logo">Twitter</span><span class="sc-count" rel="twitter-count">0</span>
   </a>
-  <a class="sc-service sc-google" rel="google-link">
-    <span class="sc-logo">Google</span><span class="sc-count" rel="google-count">0</span>
-  </a>
 </div>
 
 ...
@@ -75,8 +71,8 @@ $('#target').socialcounters();
 
 It is required to mark your elements with `rel="something"` for the plugin to fill data correctly. The default mappings include:
 
- * Links: `facebook-link`, `twitter-link`, `google-link`
- * Counts: `facebook-count`, `twitter-count`, `google-count`
+ * Links: `facebook-link`, `twitter-link`
+ * Counts: `facebook-count`, `twitter-count`
  * Total (sum of all counts): `total-count`
 
 ## Deployment

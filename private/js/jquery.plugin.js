@@ -15,16 +15,11 @@ if (typeof jQuery === 'function') {
 				Twitter: {
 					link: 'twitter-link',
 					count: 'twitter-count'
-				},
-				Google: {
-					link: 'google-link',
-					count: 'google-count'
 				}
 			},
 			links: {
 				Facebook: 'http://www.facebook.com/sharer/sharer.php?u=',
-				Twitter: 'https://twitter.com/share?url=',
-				Google: 'https://plus.google.com/share?url=',
+				Twitter: 'https://twitter.com/share?url='
 			}
 		}, options);
 

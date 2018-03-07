@@ -9,10 +9,9 @@ if (typeof jQuery === 'function') {
 		var svgs = {
 			'Facebook': {facebooksvg},			
 			'Twitter': {twittersvg},
-			'Google': {googlesvg},
 		};
 		var counts = {counts};
-		var services = ['Facebook', 'Twitter', 'Google'];
+		var services = ['Facebook', 'Twitter'];
 
 		var supportsSvg = function() {
 			// http://stackoverflow.com/questions/654112/how-do-you-detect-support-for-vml-or-svg-in-a-browser
@@ -59,9 +58,6 @@ if (typeof jQuery === 'function') {
 					break;
 				case 'Twitter':
 					href = 'https://twitter.com/share?url=' + url;
-					break;
-				case 'Google':
-					href = 'https://plus.google.com/share?url=' + url;
 					break;
 			}
 			if (!href) {
