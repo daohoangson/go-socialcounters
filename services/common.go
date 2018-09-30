@@ -139,10 +139,10 @@ func buildRequests(u utils.Utils, data *mapURLServiceCount, handleNoValueOnly bo
 }
 
 func executeRequests(u utils.Utils, requests *mapServiceRequest, data *mapURLServiceCount) {
-	utils.Verbosef(u, "services.executeRequests(%s)", requests)
 	if len(*requests) < 1 {
 		return
 	}
+	utils.Verbosef(u, "services.executeRequests(%s)", requests)
 
 	var wg sync.WaitGroup
 	var cacheWg sync.WaitGroup
