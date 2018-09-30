@@ -3,7 +3,6 @@
 package utils
 
 import (
-	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -40,14 +39,14 @@ func GaeNew(r *http.Request) Utils {
 }
 
 func (u GAE) HttpGet(url string) ([]byte, error) {
-	ctxWithTimeout, err := context.WithTimeout(u.context, 1*time.Second)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	client := urlfetch.Client(ctxWithTimeout)
+	client := urlfetch.Client(u.context)
 	req.Header.Set("User-Agent", userAgent)
-	resp, err := httpClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

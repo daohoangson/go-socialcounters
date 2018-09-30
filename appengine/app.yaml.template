@@ -1,7 +1,5 @@
-application: go-socialcounters
-version: v7
 runtime: go
-api_version: go1
+api_version: go1.9
 
 env_variables:
   ADS: ''
@@ -20,4 +18,11 @@ handlers:
 - url: /.*
   script: _go_app
 
-nobuild_files: (Godeps|services|utils|web|main.go)
+liveness_check:
+  path: "/"
+
+nobuild_files: (services|utils|vendor|web|main.go)
+
+readiness_check:
+  path: "/v2/js/data.json?url=https://facebook.com"
+  timeout_sec: 10
