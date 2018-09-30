@@ -16,7 +16,17 @@ import (
 	"appengine/urlfetch"
 )
 
-var gaeConfigs = make(map[string]string)
+type gaeConfigMap map[string]string
+
+var gaeConfigCached gaeConfigMap = nil
+
+func gaeConfigGet(key string) string {
+	if value, ok := gaeConfigCached[key]; ok {
+		return value
+	} else {
+		return ""
+	}
+}
 
 const GAE_DATASTORE_KIND_CONFIG = "Config"
 const GAE_DATASTORE_KIND_HISTORY_RECORD = "HistoryRecord"
@@ -70,33 +80,39 @@ func (u GAE) ConfigSet(key string, value string) error {
 		return err
 	}
 
-	gaeConfigs = make(map[string]string)
+	gaeConfigCached = nil
 	u.Infof("Saved config[%s] = %q", key, value)
 	return nil
 }
 
 func (u GAE) ConfigGet(key string) string {
-	if value, ok := gaeConfigs[key]; ok {
-		return value
+	if gaeConfigCached != nil {
+		return gaeConfigGet(key)
 	}
 
 	configSecret := os.Getenv("CONFIG_SECRET")
 	if len(configSecret) < 1 {
 		env := os.Getenv(key)
 		u.Infof("Loaded via env config[%s] = %q", key, env)
-		gaeConfigs[key] = env
-
 		return env
 	}
 
-	var e GaeConfig
-	k := datastore.NewKey(u.context, GAE_DATASTORE_KIND_CONFIG, key, 0, nil)
-	datastore.Get(u.context, k, &e)
+	gaeConfigCached = make(gaeConfigMap)
 
-	u.Infof("Loaded via datastore config[%s] = %q, modified = %s", key, e.Value, e.Modifed)
-	gaeConfigs[key] = e.Value
+	q := datastore.NewQuery(GAE_DATASTORE_KIND_CONFIG)
+	for i := q.Run(u.context); ; {
+		var c GaeConfig
+		gaeKey, err := i.Next(&c)
+		if err == datastore.Done {
+			break
+		}
+		if err == nil {
+			u.Infof("Requested %s, loaded via datastore config[%s] = %q, modified = %s", key, gaeKey.StringID(), c.Value, c.Modifed)
+			gaeConfigCached[gaeKey.StringID()] = c.Value
+		}
+	}
 
-	return e.Value
+	return gaeConfigGet(key)
 }
 
 var gaeDelayFunc = delay.Func(GAE_DELAY_KEY, func(c appengine.Context, delayFuncArgs ...interface{}) error {

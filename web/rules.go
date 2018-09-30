@@ -18,14 +18,14 @@ func RulesAllowUrl(u utils.Utils, url string) bool {
 		return false
 	}
 
-	if wl := getWhitelist(u, false); wl != nil {
+	if wl := getWhitelist(u); wl != nil {
 		if !wl.MatchString(url) {
 			u.Debugf("web.RulesAllowUrl: %s is not whitelisted", url)
 			return false
 		}
 	}
 
-	if bl := getBlacklist(u, false); bl != nil {
+	if bl := getBlacklist(u); bl != nil {
 		if bl.MatchString(url) {
 			u.Debugf("web.RulesAllowUrl: %s is blacklisted", url)
 			return false
@@ -35,11 +35,9 @@ func RulesAllowUrl(u utils.Utils, url string) bool {
 	return true
 }
 
-func RulesRefresh(u utils.Utils) {
-	getWhitelist(u, true)
-	getBlacklist(u, true)
-
-	u.Debugf("web.RulesReset ok")
+func rulesReset(u utils.Utils) {
+	whitelistPrepared = false
+	blacklistPrepared = false
 }
 
 func getBasic() *regexp.Regexp {
@@ -51,8 +49,8 @@ func getBasic() *regexp.Regexp {
 	return basic
 }
 
-func getWhitelist(u utils.Utils, refresh bool) *regexp.Regexp {
-	if !whitelistPrepared || refresh {
+func getWhitelist(u utils.Utils) *regexp.Regexp {
+	if !whitelistPrepared {
 		if value := u.ConfigGet("WHITELIST"); value != "" {
 			compiled, err := regexp.Compile(value)
 			if err != nil {
@@ -68,8 +66,8 @@ func getWhitelist(u utils.Utils, refresh bool) *regexp.Regexp {
 	return whitelist
 }
 
-func getBlacklist(u utils.Utils, refresh bool) *regexp.Regexp {
-	if !blacklistPrepared || refresh {
+func getBlacklist(u utils.Utils) *regexp.Regexp {
+	if !blacklistPrepared {
 		if value := u.ConfigGet("BLACKLIST"); value != "" {
 			compiled, err := regexp.Compile(value)
 			if err != nil {
