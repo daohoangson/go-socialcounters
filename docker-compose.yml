@@ -25,10 +25,10 @@ services:
     working_dir: /go/src/github.com/daohoangson/go-socialcounters
 
   memcached:
-    image: memcached:1.5.6-alpine
+    image: memcached:1.5.10-alpine
 
   mysql:
-    image: mysql:5.7.21
+    image: mysql:5.7.23
     environment:
       - MYSQL_DATABASE=db
       - MYSQL_PASSWORD=123456
