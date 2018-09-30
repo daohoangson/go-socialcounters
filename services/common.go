@@ -148,6 +148,8 @@ func executeRequests(u utils.Utils, requests *mapServiceRequest, data *mapURLSer
 	var cacheWg sync.WaitGroup
 	cacheCh := make(chan cache, 1)
 	caches := make(sliceCache, 0)
+
+	historySave := utils.ConfigGetIntWithDefault(u, "HISTORY_SAVE", 0) > 0
 	var historyWg sync.WaitGroup
 	historyTime := time.Now()
 	historyCh := make(chan utils.HistoryRecord, 1)
@@ -174,8 +176,10 @@ func executeRequests(u utils.Utils, requests *mapServiceRequest, data *mapURLSer
 						cacheWg.Add(1)
 						cacheCh <- cache{Service: req.Service, URL: url, Count: res.Count}
 
-						historyWg.Add(1)
-						historyCh <- utils.HistoryRecord{Service: req.Service, Url: url, Count: res.Count, Time: historyTime}
+						if historySave {
+							historyWg.Add(1)
+							historyCh <- utils.HistoryRecord{Service: req.Service, Url: url, Count: res.Count, Time: historyTime}
+						}
 					}
 				}
 			}
@@ -189,20 +193,26 @@ func executeRequests(u utils.Utils, requests *mapServiceRequest, data *mapURLSer
 		}
 	}()
 
-	go func() {
-		for history := range historyCh {
-			histories = append(histories, history)
-			historyWg.Done()
-		}
-	}()
-
 	wg.Wait()
-	cacheWg.Wait()
-	historyWg.Wait()
 
+	cacheWg.Wait()
 	setCaches(u, &caches)
-	if err := u.HistorySave(&histories); err != nil {
-		u.Errorf("u.HistorySave error %v", err)
+
+	if historySave {
+		go func() {
+			for history := range historyCh {
+				histories = append(histories, history)
+				historyWg.Done()
+			}
+		}()
+
+		historyWg.Wait()
+
+		if err := u.HistorySave(&histories); err != nil {
+			u.Errorf("u.HistorySave error %v", err)
+		}
+	} else {
+		utils.Verbosef(u, "Skipped saving history")
 	}
 }
 

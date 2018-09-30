@@ -11,8 +11,6 @@ handlers:
 liveness_check:
   path: "/"
 
-nobuild_files: (services|utils|vendor|web|main.go)
-
 readiness_check:
   path: "/v2/js/data.json?url=https://facebook.com"
   timeout_sec: 10

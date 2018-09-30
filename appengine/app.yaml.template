@@ -7,6 +7,7 @@ env_variables:
   BLACKLIST: ''
   FACEBOOK_APP_ID: ''
   FACEBOOK_APP_SECRET: ''
+  HISTORY_SAVE: 0
   TTL_MEMORY: 86400
   TTL_DEFAULT: 300
   TTL_RESTRICTED: 60
@@ -20,8 +21,6 @@ handlers:
 
 liveness_check:
   path: "/"
-
-nobuild_files: (services|utils|vendor|web|main.go)
 
 readiness_check:
   path: "/v2/js/data.json?url=https://facebook.com"

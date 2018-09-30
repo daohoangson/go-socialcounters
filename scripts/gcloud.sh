@@ -17,4 +17,6 @@ docker run --rm -it \
     -v "$_pwd/.data/empty:$_srcPath/vendor" \
     -v "$_pwd/.data/gcloud-config:/root/.config/gcloud" \
     -v "$_pwd/appengine:$_workdir" -w "$_workdir" \
+    -v "$_pwd/private:$_workdir/private:ro" \
+    -v "$_pwd/public:$_workdir/public:ro" \
     google/cloud-sdk bash
