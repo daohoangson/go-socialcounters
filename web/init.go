@@ -19,6 +19,7 @@ func BuildHandler(utilsFunc utils.UtilsFunc, doGzip bool) http.Handler {
 	mux.Handle("/css/", fs)
 	mux.Handle("/html/", fs)
 	mux.Handle("/img/", fs)
+	mux.Handle("/favicon.ico", fs)
 
 	mux.HandleFunc("/", httpRedirect)
 	mux.HandleFunc("/js/all.js", httpAllJs)
