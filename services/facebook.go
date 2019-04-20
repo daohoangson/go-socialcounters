@@ -1,20 +1,27 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/daohoangson/go-socialcounters/utils"
+
+	neturl "net/url"
 )
 
-import neturl "net/url"
+const fbGraphURLTemplate = "https://graph.facebook.com/v3.2/?ids=%s&fields=engagement&access_token=%s|%s"
 
 func facebookWorker(u utils.Utils, req *request) {
 	start := time.Now()
 	urls := strings.Join(req.Urls, ",")
-	url := prepareFbGraphURL(u, urls)
+	url, err := prepareFbGraphURL(u, urls)
+	if err != nil {
+		req.Error = err
+		return
+	}
 	utils.Verbosef(u, "Doing GET %s...", url)
 
 	respBody, err := u.HttpGet(url)
@@ -33,11 +40,17 @@ func facebookWorker(u utils.Utils, req *request) {
 			res.Response = respBody
 		} else {
 			res.Response = urlResp
-			if shareCount, err := jsonparser.GetInt(urlResp, "share", "share_count"); err != nil {
-				// it's alright, for new urls Facebook does not return share.share_count at all
-				res.Count = countInitValue
-			} else {
-				res.Count = shareCount
+			res.Count = countInitValue
+			if engagement, _, _, err := jsonparser.Get(urlResp, "engagement"); err == nil {
+				if reactionCount, err := jsonparser.GetInt(engagement, "reaction_count"); err == nil {
+					res.Count += reactionCount
+				}
+				if commentCount, err := jsonparser.GetInt(engagement, "comment_count"); err == nil {
+					res.Count += commentCount
+				}
+				if shareCount, err := jsonparser.GetInt(engagement, "share_count"); err == nil {
+					res.Count += shareCount
+				}
 			}
 		}
 
@@ -47,15 +60,16 @@ func facebookWorker(u utils.Utils, req *request) {
 	return
 }
 
-func prepareFbGraphURL(u utils.Utils, ids string) string {
-	scheme := "http"
-	accessToken := ""
-	if appID := u.ConfigGet("FACEBOOK_APP_ID"); appID != "" {
-		if appSecret := u.ConfigGet("FACEBOOK_APP_SECRET"); appSecret != "" {
-			scheme = "https"
-			accessToken = fmt.Sprintf("&access_token=%s|%s", appID, appSecret)
-		}
+func prepareFbGraphURL(u utils.Utils, ids string) (string, error) {
+	appID := u.ConfigGet("FACEBOOK_APP_ID")
+	if appID == "" {
+		return "", errors.New("Env var FACEBOOK_APP_ID must be configured")
 	}
 
-	return fmt.Sprintf("%s://graph.facebook.com/?ids=%s&fields=share%s", scheme, neturl.QueryEscape(ids), accessToken)
+	appSecret := u.ConfigGet("FACEBOOK_APP_SECRET")
+	if appSecret == "" {
+		return "", errors.New("Env var FACEBOOK_APP_SECRET must be configured")
+	}
+
+	return fmt.Sprintf(fbGraphURLTemplate, neturl.QueryEscape(ids), appID, appSecret), nil
 }
