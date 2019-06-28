@@ -8,6 +8,8 @@ services:
     command: ./scripts/docker/cmd.sh
     environment:
       - CLEARDB_DATABASE_URL=mysql://docker:123456@tcp(mysql:3306)/db?parseTime=1
+      - FACEBOOK_APP_ID
+      - FACEBOOK_APP_SECRET
       - MEMCACHIER_SERVERS=memcached:11211
       - TTL_DEFAULT=10
       - REFRESH_TTL_LEFT_THRESHOLD=5
@@ -19,13 +21,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./.data/go-bin:/go/bin
-      - ./.data/go-src:/go/src
-      - .:/go/src/github.com/daohoangson/go-socialcounters
-    working_dir: /go/src/github.com/daohoangson/go-socialcounters
+      - ./.data/go/pkg/mod:/go/pkg/mod
+      - .:/src
+    working_dir: /src
 
   memcached:
-    image: memcached:1.5.10-alpine
+    image: memcached:1.5.16-alpine
 
   mysql:
     image: mysql:5.7.23
