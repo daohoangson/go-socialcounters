@@ -1,0 +1,6 @@
+/.data/
+/scripts/
+/.dockerignore
+/.env
+/docker-compose.yml
+/Dockerfile
