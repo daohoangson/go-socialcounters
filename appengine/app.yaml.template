@@ -1,5 +1,4 @@
-runtime: go
-api_version: go1.9
+runtime: go111
 
 env_variables:
   ADS: ''
@@ -17,7 +16,7 @@ env_variables:
 
 handlers:
 - url: /.*
-  script: _go_app
+  script: auto
 
 liveness_check:
   path: "/"

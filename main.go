@@ -1,5 +1,3 @@
-// +build !appengine
-
 package main
 
 import (
@@ -8,18 +6,28 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/daohoangson/go-socialcounters/utils"
 	"github.com/daohoangson/go-socialcounters/services"
+	"github.com/daohoangson/go-socialcounters/utils"
 	"github.com/daohoangson/go-socialcounters/web"
+	"google.golang.org/appengine"
 )
 
-func utilsFunc(w http.ResponseWriter, r *http.Request) utils.Utils {
+func utilsFuncGae(_ http.ResponseWriter, r *http.Request) utils.Utils {
+	return utils.GaeNew(r)
+}
+
+func utilsFuncOther(_ http.ResponseWriter, r *http.Request) utils.Utils {
 	return utils.OtherNew(r)
 }
 
 func main() {
 	services.Init()
-	handler := web.BuildHandler(utilsFunc, true)
+
+	if len(os.Getenv("GAE_SERVICE")) > 0 {
+		http.Handle("/", web.BuildHandler(utilsFuncGae, true))
+		appengine.Main()
+		return
+	}
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -27,5 +35,5 @@ func main() {
 	}
 
 	fmt.Printf("Listening on %s...\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, handler))
+	log.Fatal(http.ListenAndServe(":"+port, web.BuildHandler(utilsFuncOther, true)))
 }

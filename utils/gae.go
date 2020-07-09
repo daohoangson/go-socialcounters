@@ -1,19 +1,19 @@
-// +build appengine
-
 package utils
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
-	"appengine"
-	"appengine/datastore"
-	"appengine/delay"
-	"appengine/memcache"
-	"appengine/urlfetch"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/delay"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/urlfetch"
 )
 
 type gaeConfigMap map[string]string
@@ -38,7 +38,7 @@ type GaeConfig struct {
 }
 
 type GAE struct {
-	context appengine.Context
+	context context.Context
 }
 
 func GaeNew(r *http.Request) Utils {
@@ -109,22 +109,25 @@ func (u GAE) ConfigGet(key string) string {
 		if err == nil {
 			u.Infof("Requested %s, loaded via datastore config[%s] = %q, modified = %s", key, gaeKey.StringID(), c.Value, c.Modifed)
 			gaeConfigCached[gaeKey.StringID()] = c.Value
+		} else {
+			u.Errorf("ConfigGet datastore.Query.Run() err=%v", err)
+			break
 		}
 	}
 
 	return gaeConfigGet(key)
 }
 
-var gaeDelayFunc = delay.Func(GAE_DELAY_KEY, func(c appengine.Context, delayFuncArgs ...interface{}) error {
+var gaeDelayFunc = delay.Func(GAE_DELAY_KEY, func(c context.Context, delayFuncArgs ...interface{}) error {
 	handlerName, ok := delayFuncArgs[0].(string)
 	if !ok {
-		c.Errorf("GAE.Delay: handler name could not be extracted from %v", delayFuncArgs)
+		log.Errorf(c, "GAE.Delay: handler name could not be extracted from %v", delayFuncArgs)
 		return nil
 	}
 
 	handler, ok := DelayHandlers[handlerName]
 	if !ok {
-		c.Errorf("GAE.Delay: handler %s could not be found", handlerName)
+		log.Errorf(c, "GAE.Delay: handler %s could not be found", handlerName)
 		return nil
 	}
 
@@ -232,13 +235,13 @@ func (u GAE) HistoryLoad(url string) ([]HistoryRecord, error) {
 }
 
 func (u GAE) Errorf(format string, args ...interface{}) {
-	u.context.Errorf(format, args...)
+	log.Errorf(u.context, format, args...)
 }
 
 func (u GAE) Infof(format string, args ...interface{}) {
-	u.context.Infof(format, args...)
+	log.Infof(u.context, format, args...)
 }
 
 func (u GAE) Debugf(format string, args ...interface{}) {
-	u.context.Debugf(format, args...)
+	log.Debugf(u.context, format, args...)
 }
