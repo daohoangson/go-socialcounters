@@ -20,6 +20,7 @@ var workers = map[string]worker{
 
 var dataNeedRefresh *mapURLServiceCount
 var dataNeedRefreshCount = int64(0)
+var dataNeedRefreshMutex = &sync.RWMutex{}
 
 // Init sets up global environment
 func Init() {
@@ -229,6 +230,7 @@ func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
 			continue
 		}
 
+		dataNeedRefreshMutex.Lock()
 		if dataNeedRefresh == nil {
 			newData := make(mapURLServiceCount)
 			dataNeedRefresh = &newData
@@ -239,6 +241,7 @@ func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
 		// intentionally do not count unique url because if one url got flagged
 		// multiple times, it should be refreshed anyway
 		dataNeedRefreshCount++
+		dataNeedRefreshMutex.Unlock()
 
 		// temporary mark the cached count as fresh to avoid other process
 		// also trying to refresh it, we will take care of it later
@@ -249,6 +252,9 @@ func checkCachesForRefresh(u utils.Utils, caches *sliceCache) {
 }
 
 func scheduleRefreshIfNeeded(u utils.Utils) {
+	dataNeedRefreshMutex.RLock()
+	defer dataNeedRefreshMutex.RUnlock()
+
 	if dataNeedRefresh == nil {
 		return
 	}
