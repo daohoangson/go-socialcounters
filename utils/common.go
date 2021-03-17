@@ -6,6 +6,7 @@ import (
 )
 
 const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3355.0 Safari/537.36"
+const configKeyVerbose = "VERBOSE"
 
 var DelayHandlers = make(map[string]DelayHandler)
 
@@ -34,7 +35,7 @@ func ConfigGetTTLDefault(u Utils) int64 {
 }
 
 func Verbosef(u Utils, format string, args ...interface{}) {
-	if ConfigGetIntWithDefault(u, "VERBOSE", 0) < 1 {
+	if ConfigGetIntWithDefault(u, configKeyVerbose, 0) < 1 {
 		return
 	}
 

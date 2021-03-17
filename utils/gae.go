@@ -93,7 +93,9 @@ func (u GAE) ConfigGet(key string) string {
 	configSecret := os.Getenv("CONFIG_SECRET")
 	if len(configSecret) < 1 {
 		env := os.Getenv(key)
-		u.Infof("Loaded via env config[%s] = %q", key, env)
+		if (key != configKeyVerbose) {
+			Verbosef(u, "Loaded via env config[%s] = %q", key, env)
+		}
 		return env
 	}
 
